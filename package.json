@@ -1,0 +1,37 @@
+{
+  "name": "scribe",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -n api,web -c cyan,magenta \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:web": "vite --host 127.0.0.1 --port 4173",
+    "dev:api": "node --watch backend/src/server.js",
+    "start:api": "node backend/src/server.js",
+    "migrate:supabase": "node backend/scripts/migrate-sqlite-to-supabase.js",
+    "migrate:supabase:dry": "node backend/scripts/migrate-sqlite-to-supabase.js --dry-run",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.98.0",
+    "@upstash/redis": "^1.36.3",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.6.2",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "nanoid": "^5.1.6",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "recharts": "^3.7.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.1.1",
+    "concurrently": "^9.2.1",
+    "playwright": "^1.58.2",
+    "vite": "^7.1.12"
+  }
+}
