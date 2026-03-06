@@ -143,6 +143,9 @@ Seeded local account (created automatically in SQLite on first run):
 - `npm run start:api` - run backend once
 - `npm run build` - production frontend build
 - `npm run preview` - preview built frontend
+- `npm run supabase:db:push:dry` - dry run remote Supabase schema push (CLI)
+- `npm run supabase:db:push` - push `supabase/migrations/*` to remote Supabase
+- `npm run supabase:bind` - link project, push schema, then migrate SQLite data to Supabase
 - `npm run migrate:supabase:dry` - inspect migration plan without writes
 - `npm run migrate:supabase` - migrate SQLite data to Supabase
 
@@ -170,6 +173,8 @@ When Upstash values are missing/placeholder, Scribe automatically falls back to 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_PROJECT_REF` (required for `npm run supabase:bind`)
+- `SUPABASE_DB_PASSWORD` (optional; used by Supabase CLI if required)
 - `SUPABASE_MIGRATE_BATCH_SIZE` (optional, default `500`)
 
 ### Reserved/future integrations (already wired in config)
@@ -315,21 +320,44 @@ Supported categories include:
 
 ### Supabase migration path
 
-1. Run SQL schema from `backend/supabase/schema.sql`
-2. Set real Supabase env values
-3. Dry run migration:
+1. Set real Supabase env values in `.env`:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_PROJECT_REF`
+
+2. Authenticate Supabase CLI once:
+
+```bash
+supabase login
+```
+
+3. Push schema (tables/queries) to your Supabase project:
+
+```bash
+npm run supabase:db:push
+```
+
+4. Dry run data migration:
 
 ```bash
 npm run migrate:supabase:dry
 ```
 
-4. Execute migration:
+5. Execute data migration:
 
 ```bash
 npm run migrate:supabase
 ```
 
-5. Optional reset before migration:
+Optional all-in-one bind command (project link + schema push + data migration):
+
+```bash
+npm run supabase:bind
+```
+
+Optional reset before migration:
 
 ```bash
 npm run migrate:supabase -- --reset
