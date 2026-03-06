@@ -146,12 +146,15 @@ export default function GlobalStyle() {
       .hero-scene {
         position:relative;
         min-height:520px;
+        overflow:visible;
+        isolation:isolate;
       }
       .hero-mesh {
         position:absolute;
         inset:0;
         opacity:.22;
         pointer-events:none;
+        z-index:1;
         background-image:
           radial-gradient(circle at 30% 30%, rgba(0,204,248,.22) 0, transparent 55%),
           radial-gradient(circle at 75% 70%, rgba(0,229,160,.18) 0, transparent 52%);
@@ -166,6 +169,8 @@ export default function GlobalStyle() {
         min-width:180px;
         box-shadow:var(--hero-shadow-rest);
         animation:floatY 4.6s ease-in-out infinite;
+        z-index:4;
+        pointer-events:none;
       }
       .hero-float-card:nth-child(2n) {
         animation-duration:5.6s;
@@ -229,7 +234,24 @@ export default function GlobalStyle() {
           gap:34px;
         }
         .hero-scene {
-          min-height:450px;
+          min-height:560px;
+        }
+        .hero-editor {
+          max-width:760px;
+          margin:0 auto;
+        }
+        .hero-float-card--top {
+          top:12px !important;
+          right:10px !important;
+        }
+        .hero-float-card--left {
+          top:auto !important;
+          bottom:122px !important;
+          left:10px !important;
+        }
+        .hero-float-card--bottom {
+          bottom:14px !important;
+          right:16px !important;
         }
         .landing-feature-grid {
           grid-template-columns:repeat(2,minmax(0,1fr));
@@ -261,6 +283,18 @@ export default function GlobalStyle() {
         .hero-float-card {
           min-width:150px;
           padding:10px 11px;
+        }
+        .hero-float-card--left {
+          display:none;
+        }
+        .hero-float-card--top {
+          top:10px !important;
+          right:6px !important;
+        }
+        .hero-float-card--bottom {
+          left:8px !important;
+          right:auto !important;
+          bottom:10px !important;
         }
       }
     `}</style>

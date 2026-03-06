@@ -346,7 +346,7 @@ export default function LandingScreen({ setScreen }) {
                 </div>
               </div>
 
-              <div className="hero-float-card" style={{ top: 18, right: -18, animationDelay: ".2s" }}>
+              <div className="hero-float-card hero-float-card--top" style={{ top: 18, right: -18, animationDelay: ".2s" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text3)", marginBottom: 5 }}>
                   WEBHOOK DELIVERY
                 </div>
@@ -359,7 +359,7 @@ export default function LandingScreen({ setScreen }) {
                 </div>
               </div>
 
-              <div className="hero-float-card" style={{ top: 200, left: -22, animationDelay: ".7s" }}>
+              <div className="hero-float-card hero-float-card--left" style={{ top: 200, left: -22, animationDelay: ".7s" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text3)", marginBottom: 5 }}>
                   GROWTH SNAPSHOT
                 </div>
@@ -371,7 +371,7 @@ export default function LandingScreen({ setScreen }) {
                 </div>
               </div>
 
-              <div className="hero-float-card" style={{ bottom: 24, right: 16, animationDelay: "1.1s" }}>
+              <div className="hero-float-card hero-float-card--bottom" style={{ bottom: 24, right: 16, animationDelay: "1.1s" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text3)", marginBottom: 5 }}>
                   API CALL
                 </div>
