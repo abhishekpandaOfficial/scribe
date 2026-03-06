@@ -14,7 +14,7 @@ import {
   verifyPassword,
   verifyToken,
 } from "./lib/security.js";
-import { supabaseMeta } from "./lib/supabase.js";
+import { supabaseAdmin, supabaseMeta } from "./lib/supabase.js";
 
 const app = express();
 
@@ -127,7 +127,538 @@ function formatRelative(iso) {
   return `${days} day${days > 1 ? "s" : ""} ago`;
 }
 
-function authMiddleware(req, res, next) {
+const prefersSupabase = config.dataProvider === "supabase";
+const usingSupabase = prefersSupabase && Boolean(supabaseAdmin);
+
+if (prefersSupabase && !usingSupabase) {
+  // eslint-disable-next-line no-console
+  console.warn("DATA_PROVIDER=supabase but Supabase config is incomplete. Falling back to sqlite runtime.");
+}
+
+function assertSupabase(result, context) {
+  if (!result.error) {
+    return result.data;
+  }
+  throw new Error(`${context}: ${result.error.message}`);
+}
+
+async function getUserById(id) {
+  if (!usingSupabase) {
+    return db.prepare("SELECT * FROM users WHERE id = ?").get(id);
+  }
+  const result = await supabaseAdmin.from("users").select("*").eq("id", id).maybeSingle();
+  return assertSupabase(result, "getUserById");
+}
+
+async function getUserByEmail(email) {
+  if (!usingSupabase) {
+    return db.prepare("SELECT * FROM users WHERE email = ?").get(email.toLowerCase());
+  }
+  const result = await supabaseAdmin.from("users").select("*").eq("email", email.toLowerCase()).maybeSingle();
+  return assertSupabase(result, "getUserByEmail");
+}
+
+async function getUserByUsername(username) {
+  if (!usingSupabase) {
+    return db.prepare("SELECT * FROM users WHERE username = ?").get(username.toLowerCase());
+  }
+  const result = await supabaseAdmin.from("users").select("*").eq("username", username.toLowerCase()).maybeSingle();
+  return assertSupabase(result, "getUserByUsername");
+}
+
+async function getFirstUser() {
+  if (!usingSupabase) {
+    return db.prepare("SELECT * FROM users ORDER BY created_at ASC LIMIT 1").get();
+  }
+  const result = await supabaseAdmin.from("users").select("*").order("created_at", { ascending: true }).limit(1);
+  return assertSupabase(result, "getFirstUser")?.[0] || null;
+}
+
+async function findExistingUserByEmailOrUsername(email, username) {
+  if (!usingSupabase) {
+    return db.prepare("SELECT id FROM users WHERE email = ? OR username = ?").get(email.toLowerCase(), username.toLowerCase());
+  }
+  const result = await supabaseAdmin
+    .from("users")
+    .select("id,email,username")
+    .or(`email.eq.${email.toLowerCase()},username.eq.${username.toLowerCase()}`)
+    .limit(1);
+  return assertSupabase(result, "findExistingUserByEmailOrUsername")?.[0] || null;
+}
+
+async function isUsernameTaken(username, excludeUserId) {
+  if (!usingSupabase) {
+    const taken = db.prepare("SELECT id FROM users WHERE username = ? AND id != ?").get(username, excludeUserId);
+    return Boolean(taken);
+  }
+  const result = await supabaseAdmin.from("users").select("id").eq("username", username).neq("id", excludeUserId).limit(1);
+  const rows = assertSupabase(result, "isUsernameTaken");
+  return rows.length > 0;
+}
+
+async function isEmailTaken(email, excludeUserId) {
+  if (!usingSupabase) {
+    const taken = db.prepare("SELECT id FROM users WHERE email = ? AND id != ?").get(email, excludeUserId);
+    return Boolean(taken);
+  }
+  const result = await supabaseAdmin.from("users").select("id").eq("email", email).neq("id", excludeUserId).limit(1);
+  const rows = assertSupabase(result, "isEmailTaken");
+  return rows.length > 0;
+}
+
+async function createUserRecord(payload) {
+  if (!usingSupabase) {
+    db.prepare(
+      `INSERT INTO users (id, name, username, email, password_hash, plan, bio, website, twitter, github, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 'Pro', '', '', '', '', ?, ?)`
+    ).run(payload.id, payload.name, payload.username, payload.email, payload.passwordHash, payload.createdAt, payload.updatedAt);
+    return getUserById(payload.id);
+  }
+
+  const result = await supabaseAdmin
+    .from("users")
+    .insert({
+      id: payload.id,
+      name: payload.name,
+      username: payload.username,
+      email: payload.email,
+      password_hash: payload.passwordHash,
+      plan: "Pro",
+      bio: "",
+      website: "",
+      twitter: "",
+      github: "",
+      created_at: payload.createdAt,
+      updated_at: payload.updatedAt,
+    })
+    .select("*")
+    .single();
+  return assertSupabase(result, "createUserRecord");
+}
+
+async function updateUserRecord(payload) {
+  if (!usingSupabase) {
+    db.prepare(
+      `UPDATE users SET
+        name = @name,
+        username = @username,
+        email = @email,
+        bio = @bio,
+        website = @website,
+        twitter = @twitter,
+        github = @github,
+        updated_at = @updated_at
+       WHERE id = @id`
+    ).run(payload);
+    return getUserById(payload.id);
+  }
+
+  const result = await supabaseAdmin
+    .from("users")
+    .update({
+      name: payload.name,
+      username: payload.username,
+      email: payload.email,
+      bio: payload.bio,
+      website: payload.website,
+      twitter: payload.twitter,
+      github: payload.github,
+      updated_at: payload.updated_at,
+    })
+    .eq("id", payload.id)
+    .select("*")
+    .single();
+  return assertSupabase(result, "updateUserRecord");
+}
+
+async function getApiKeyByHash(keyHash) {
+  if (!usingSupabase) {
+    return db.prepare("SELECT * FROM api_keys WHERE key_hash = ? AND revoked = 0").get(keyHash);
+  }
+  const result = await supabaseAdmin
+    .from("api_keys")
+    .select("*")
+    .eq("key_hash", keyHash)
+    .eq("revoked", 0)
+    .limit(1);
+  return assertSupabase(result, "getApiKeyByHash")?.[0] || null;
+}
+
+async function touchApiKeyLastUsed(id, at) {
+  if (!usingSupabase) {
+    db.prepare("UPDATE api_keys SET last_used_at = ? WHERE id = ?").run(at, id);
+    return;
+  }
+  const result = await supabaseAdmin.from("api_keys").update({ last_used_at: at }).eq("id", id);
+  assertSupabase(result, "touchApiKeyLastUsed");
+}
+
+async function listApiKeysByUser(userId) {
+  if (!usingSupabase) {
+    return db
+      .prepare("SELECT * FROM api_keys WHERE user_id = ? AND revoked = 0 ORDER BY created_at DESC")
+      .all(userId);
+  }
+  const result = await supabaseAdmin
+    .from("api_keys")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("revoked", 0)
+    .order("created_at", { ascending: false });
+  return assertSupabase(result, "listApiKeysByUser");
+}
+
+async function createApiKeyRecord(payload) {
+  if (!usingSupabase) {
+    db.prepare(
+      `INSERT INTO api_keys
+        (id, user_id, name, key_prefix, key_hash, permissions_json, last_used_at, expires_at, revoked, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, NULL, ?, 0, ?)`
+    ).run(
+      payload.id,
+      payload.user_id,
+      payload.name,
+      payload.key_prefix,
+      payload.key_hash,
+      payload.permissions_json,
+      payload.expires_at,
+      payload.created_at
+    );
+    return getApiKeyById(payload.id);
+  }
+
+  const result = await supabaseAdmin
+    .from("api_keys")
+    .insert(payload)
+    .select("*")
+    .single();
+  return assertSupabase(result, "createApiKeyRecord");
+}
+
+async function getApiKeyById(id) {
+  if (!usingSupabase) {
+    return db.prepare("SELECT * FROM api_keys WHERE id = ?").get(id);
+  }
+  const result = await supabaseAdmin.from("api_keys").select("*").eq("id", id).maybeSingle();
+  return assertSupabase(result, "getApiKeyById");
+}
+
+async function getApiKeyByIdAndUser(id, userId) {
+  if (!usingSupabase) {
+    return db.prepare("SELECT id FROM api_keys WHERE id = ? AND user_id = ?").get(id, userId);
+  }
+  const result = await supabaseAdmin.from("api_keys").select("id").eq("id", id).eq("user_id", userId).maybeSingle();
+  return assertSupabase(result, "getApiKeyByIdAndUser");
+}
+
+async function revokeApiKey(id) {
+  if (!usingSupabase) {
+    db.prepare("UPDATE api_keys SET revoked = 1 WHERE id = ?").run(id);
+    return;
+  }
+  const result = await supabaseAdmin.from("api_keys").update({ revoked: 1 }).eq("id", id);
+  assertSupabase(result, "revokeApiKey");
+}
+
+async function getWebhooksByUser(userId, { activeOnly = false } = {}) {
+  if (!usingSupabase) {
+    const query = activeOnly
+      ? "SELECT * FROM webhooks WHERE user_id = ? AND is_active = 1"
+      : "SELECT * FROM webhooks WHERE user_id = ? ORDER BY created_at DESC";
+    return db.prepare(query).all(userId);
+  }
+  let query = supabaseAdmin.from("webhooks").select("*").eq("user_id", userId);
+  if (activeOnly) {
+    query = query.eq("is_active", 1);
+  } else {
+    query = query.order("created_at", { ascending: false });
+  }
+  const result = await query;
+  return assertSupabase(result, "getWebhooksByUser");
+}
+
+async function createWebhookRecord(payload) {
+  if (!usingSupabase) {
+    db.prepare(
+      `INSERT INTO webhooks
+        (id, user_id, name, url, events_json, is_active, last_status, last_triggered_at, created_at)
+       VALUES (?, ?, ?, ?, ?, 1, NULL, NULL, ?)`
+    ).run(payload.id, payload.user_id, payload.name, payload.url, payload.events_json, payload.created_at);
+    return getWebhookById(payload.id);
+  }
+  const result = await supabaseAdmin
+    .from("webhooks")
+    .insert({
+      ...payload,
+      is_active: 1,
+      last_status: null,
+      last_triggered_at: null,
+    })
+    .select("*")
+    .single();
+  return assertSupabase(result, "createWebhookRecord");
+}
+
+async function getWebhookById(id) {
+  if (!usingSupabase) {
+    return db.prepare("SELECT * FROM webhooks WHERE id = ?").get(id);
+  }
+  const result = await supabaseAdmin.from("webhooks").select("*").eq("id", id).maybeSingle();
+  return assertSupabase(result, "getWebhookById");
+}
+
+async function getWebhookByIdAndUser(id, userId) {
+  if (!usingSupabase) {
+    return db.prepare("SELECT * FROM webhooks WHERE id = ? AND user_id = ?").get(id, userId);
+  }
+  const result = await supabaseAdmin
+    .from("webhooks")
+    .select("*")
+    .eq("id", id)
+    .eq("user_id", userId)
+    .maybeSingle();
+  return assertSupabase(result, "getWebhookByIdAndUser");
+}
+
+async function deleteWebhook(id) {
+  if (!usingSupabase) {
+    db.prepare("DELETE FROM webhooks WHERE id = ?").run(id);
+    return;
+  }
+  const result = await supabaseAdmin.from("webhooks").delete().eq("id", id);
+  assertSupabase(result, "deleteWebhook");
+}
+
+async function updateWebhookDelivery(id, status, triggeredAt) {
+  if (!usingSupabase) {
+    db.prepare("UPDATE webhooks SET last_status = ?, last_triggered_at = ? WHERE id = ?").run(status, triggeredAt, id);
+    return;
+  }
+  const result = await supabaseAdmin
+    .from("webhooks")
+    .update({ last_status: status, last_triggered_at: triggeredAt })
+    .eq("id", id);
+  assertSupabase(result, "updateWebhookDelivery");
+}
+
+async function insertWebhookLog(payload) {
+  if (!usingSupabase) {
+    db.prepare(
+      "INSERT INTO webhook_logs (id, webhook_id, event_type, status, response_body, created_at) VALUES (?, ?, ?, ?, ?, ?)"
+    ).run(payload.id, payload.webhook_id, payload.event_type, payload.status, payload.response_body, payload.created_at);
+    return;
+  }
+  const result = await supabaseAdmin.from("webhook_logs").insert(payload);
+  assertSupabase(result, "insertWebhookLog");
+}
+
+async function countWebhookLogs() {
+  if (!usingSupabase) {
+    return db.prepare("SELECT COUNT(*) as count FROM webhook_logs").get().count;
+  }
+  const result = await supabaseAdmin.from("webhook_logs").select("id", { count: "exact", head: true });
+  assertSupabase(result, "countWebhookLogs");
+  return result.count || 0;
+}
+
+async function listPostSlugsByUser(userId) {
+  if (!usingSupabase) {
+    return db.prepare("SELECT slug FROM posts WHERE user_id = ?").all(userId);
+  }
+  const result = await supabaseAdmin.from("posts").select("slug").eq("user_id", userId);
+  return assertSupabase(result, "listPostSlugsByUser");
+}
+
+async function getPostIdByUserAndSlug(userId, slug) {
+  if (!usingSupabase) {
+    return db.prepare("SELECT id FROM posts WHERE user_id = ? AND slug = ?").get(userId, slug);
+  }
+  const result = await supabaseAdmin.from("posts").select("id").eq("user_id", userId).eq("slug", slug).maybeSingle();
+  return assertSupabase(result, "getPostIdByUserAndSlug");
+}
+
+async function listPostsByUser(userId, { status = "all", onlyPublished = false, orderByViews = false, publicOrder = false } = {}) {
+  if (!usingSupabase) {
+    const params = [userId];
+    let query = "SELECT * FROM posts WHERE user_id = ?";
+    if (onlyPublished) {
+      query += " AND status = 'published'";
+    } else if (status !== "all") {
+      query += " AND status = ?";
+      params.push(status);
+    }
+    if (orderByViews) {
+      query += " ORDER BY views DESC";
+    } else if (publicOrder) {
+      query += " ORDER BY published_at DESC, updated_at DESC";
+    } else {
+      query += " ORDER BY updated_at DESC";
+    }
+    return db.prepare(query).all(...params);
+  }
+
+  let query = supabaseAdmin.from("posts").select("*").eq("user_id", userId);
+  if (onlyPublished) {
+    query = query.eq("status", "published");
+  } else if (status !== "all") {
+    query = query.eq("status", status);
+  }
+  if (orderByViews) {
+    query = query.order("views", { ascending: false });
+  } else if (publicOrder) {
+    query = query.order("published_at", { ascending: false, nullsFirst: false }).order("updated_at", { ascending: false });
+  } else {
+    query = query.order("updated_at", { ascending: false });
+  }
+  const result = await query;
+  return assertSupabase(result, "listPostsByUser");
+}
+
+async function getPostById(id) {
+  if (!usingSupabase) {
+    return db.prepare("SELECT * FROM posts WHERE id = ?").get(id);
+  }
+  const result = await supabaseAdmin.from("posts").select("*").eq("id", id).maybeSingle();
+  return assertSupabase(result, "getPostById");
+}
+
+async function getPostByIdAndUser(id, userId) {
+  if (!usingSupabase) {
+    return db.prepare("SELECT * FROM posts WHERE id = ? AND user_id = ?").get(id, userId);
+  }
+  const result = await supabaseAdmin.from("posts").select("*").eq("id", id).eq("user_id", userId).maybeSingle();
+  return assertSupabase(result, "getPostByIdAndUser");
+}
+
+async function getPostByUserAndSlug(userId, slug, { publishedOnly = false } = {}) {
+  if (!usingSupabase) {
+    const query = publishedOnly
+      ? "SELECT * FROM posts WHERE user_id = ? AND slug = ? AND status = 'published'"
+      : "SELECT * FROM posts WHERE user_id = ? AND slug = ?";
+    return db.prepare(query).get(userId, slug);
+  }
+  let q = supabaseAdmin.from("posts").select("*").eq("user_id", userId).eq("slug", slug);
+  if (publishedOnly) {
+    q = q.eq("status", "published");
+  }
+  const result = await q.maybeSingle();
+  return assertSupabase(result, "getPostByUserAndSlug");
+}
+
+async function createPostRecord(payload) {
+  if (!usingSupabase) {
+    db.prepare(
+      `INSERT INTO posts
+        (id, user_id, title, slug, excerpt, content_json, status, series, chapter, difficulty, tags_json, read_time, views, created_at, updated_at, published_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`
+    ).run(
+      payload.id,
+      payload.user_id,
+      payload.title,
+      payload.slug,
+      payload.excerpt,
+      payload.content_json,
+      payload.status,
+      payload.series,
+      payload.chapter,
+      payload.difficulty,
+      payload.tags_json,
+      payload.read_time,
+      payload.created_at,
+      payload.updated_at,
+      payload.published_at
+    );
+    return getPostById(payload.id);
+  }
+
+  const result = await supabaseAdmin
+    .from("posts")
+    .insert({ ...payload, views: 0 })
+    .select("*")
+    .single();
+  return assertSupabase(result, "createPostRecord");
+}
+
+async function updatePostRecord(id, payload) {
+  if (!usingSupabase) {
+    db.prepare(
+      `UPDATE posts SET
+        title = @title,
+        slug = @slug,
+        excerpt = @excerpt,
+        content_json = @content_json,
+        status = @status,
+        series = @series,
+        chapter = @chapter,
+        difficulty = @difficulty,
+        tags_json = @tags_json,
+        read_time = @read_time,
+        views = @views,
+        updated_at = @updated_at,
+        published_at = @published_at
+       WHERE id = @id`
+    ).run({ id, ...payload });
+    return getPostById(id);
+  }
+
+  const result = await supabaseAdmin
+    .from("posts")
+    .update(payload)
+    .eq("id", id)
+    .select("*")
+    .single();
+  return assertSupabase(result, "updatePostRecord");
+}
+
+async function deletePost(id) {
+  if (!usingSupabase) {
+    db.prepare("DELETE FROM posts WHERE id = ?").run(id);
+    return;
+  }
+  const result = await supabaseAdmin.from("posts").delete().eq("id", id);
+  assertSupabase(result, "deletePost");
+}
+
+async function incrementPostViews(id, currentViews = null) {
+  if (!usingSupabase) {
+    db.prepare("UPDATE posts SET views = views + 1 WHERE id = ?").run(id);
+    return;
+  }
+  const nextViews = Number(currentViews ?? 0) + 1;
+  const result = await supabaseAdmin.from("posts").update({ views: nextViews }).eq("id", id);
+  assertSupabase(result, "incrementPostViews");
+}
+
+async function insertPageView(payload) {
+  if (!usingSupabase) {
+    db.prepare(
+      "INSERT INTO page_views (id, user_id, post_id, source, country, created_at) VALUES (?, ?, ?, ?, ?, ?)"
+    ).run(payload.id, payload.user_id, payload.post_id, payload.source, payload.country, payload.created_at);
+    return;
+  }
+  const result = await supabaseAdmin.from("page_views").insert(payload);
+  assertSupabase(result, "insertPageView");
+}
+
+async function listPageViewsByUser(userId) {
+  if (!usingSupabase) {
+    return db.prepare("SELECT * FROM page_views WHERE user_id = ?").all(userId);
+  }
+  const result = await supabaseAdmin.from("page_views").select("*").eq("user_id", userId);
+  return assertSupabase(result, "listPageViewsByUser");
+}
+
+async function countPostsAndPublishedViewsByUser(userId) {
+  const posts = await listPostsByUser(userId, { status: "all" });
+  return {
+    totalPosts: posts.length,
+    totalPublishedViews: posts
+      .filter((post) => post.status === "published")
+      .reduce((sum, post) => sum + Number(post.views || 0), 0),
+  };
+}
+
+async function authMiddleware(req, res, next) {
   const auth = req.headers.authorization || "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
 
@@ -137,7 +668,7 @@ function authMiddleware(req, res, next) {
 
   try {
     const payload = verifyToken(token);
-    const user = db.prepare("SELECT * FROM users WHERE id = ?").get(payload.sub);
+    const user = await getUserById(payload.sub);
     if (!user) {
       return res.status(401).json({ error: "INVALID_TOKEN" });
     }
@@ -149,16 +680,14 @@ function authMiddleware(req, res, next) {
   }
 }
 
-function apiKeyMiddleware(req, res, next) {
+async function apiKeyMiddleware(req, res, next) {
   const key = req.headers["x-api-key"];
   if (!key || typeof key !== "string") {
     return res.status(401).json({ error: "MISSING_AUTH" });
   }
 
   const keyHash = hashApiKey(key);
-  const row = db
-    .prepare("SELECT * FROM api_keys WHERE key_hash = ? AND revoked = 0")
-    .get(keyHash);
+  const row = await getApiKeyByHash(keyHash);
 
   if (!row) {
     return res.status(401).json({ error: "INVALID_KEY" });
@@ -168,9 +697,9 @@ function apiKeyMiddleware(req, res, next) {
     return res.status(401).json({ error: "INVALID_KEY" });
   }
 
-  db.prepare("UPDATE api_keys SET last_used_at = ? WHERE id = ?").run(nowIso(), row.id);
+  await touchApiKeyLastUsed(row.id, nowIso());
   req.apiKey = row;
-  req.keyUser = db.prepare("SELECT * FROM users WHERE id = ?").get(row.user_id);
+  req.keyUser = await getUserById(row.user_id);
 
   if (!req.keyUser) {
     return res.status(401).json({ error: "INVALID_KEY" });
@@ -180,9 +709,7 @@ function apiKeyMiddleware(req, res, next) {
 }
 
 async function triggerWebhooks(userId, eventType, payload) {
-  const hooks = db
-    .prepare("SELECT * FROM webhooks WHERE user_id = ? AND is_active = 1")
-    .all(userId);
+  const hooks = await getWebhooksByUser(userId, { activeOnly: true });
 
   for (const hook of hooks) {
     const events = parseJson(hook.events_json, []);
@@ -216,25 +743,24 @@ async function triggerWebhooks(userId, eventType, payload) {
     }
 
     const now = nowIso();
-    db.prepare("UPDATE webhooks SET last_status = ?, last_triggered_at = ? WHERE id = ?").run(
+    await updateWebhookDelivery(hook.id, status, now);
+    await insertWebhookLog({
+      id: generateId("wlg"),
+      webhook_id: hook.id,
+      event_type: eventType,
       status,
-      now,
-      hook.id
-    );
-    db.prepare(
-      "INSERT INTO webhook_logs (id, webhook_id, event_type, status, response_body, created_at) VALUES (?, ?, ?, ?, ?, ?)"
-    ).run(generateId("wlg"), hook.id, eventType, status, responseBody.slice(0, 2000), now);
+      response_body: responseBody.slice(0, 2000),
+      created_at: now,
+    });
   }
 }
 
-function ensureUniqueSlug(userId, desiredSlug, postId = null) {
+async function ensureUniqueSlug(userId, desiredSlug, postId = null) {
   let slug = desiredSlug || "untitled";
   let i = 1;
 
   while (true) {
-    const row = db
-      .prepare("SELECT id FROM posts WHERE user_id = ? AND slug = ?")
-      .get(userId, slug);
+    const row = await getPostIdByUserAndSlug(userId, slug);
 
     if (!row || (postId && row.id === postId)) {
       return slug;
@@ -270,7 +796,7 @@ async function invalidateUserCaches({ userId, username }) {
     cacheKey(["v1", userId, "posts", "published"]),
   ];
 
-  const slugRows = db.prepare("SELECT slug FROM posts WHERE user_id = ?").all(userId);
+  const slugRows = await listPostSlugsByUser(userId);
   slugRows.forEach((row) => {
     keys.push(cacheKey(["v1", userId, "post", row.slug]));
   });
@@ -288,6 +814,7 @@ app.get("/health", (_req, res) => {
     ok: true,
     time: nowIso(),
     dataProvider: config.dataProvider,
+    runtimeProvider: usingSupabase ? "supabase" : "sqlite",
     cache: cacheMeta,
     supabase: supabaseMeta,
   });
@@ -298,7 +825,7 @@ app.post("/api/auth/local-bypass", async (_req, res) => {
     return res.status(403).json({ error: "NOT_ALLOWED" });
   }
 
-  const user = db.prepare("SELECT * FROM users ORDER BY created_at ASC LIMIT 1").get();
+  const user = await getFirstUser();
   if (!user) {
     return res.status(404).json({ error: "NO_LOCAL_USER" });
   }
@@ -324,9 +851,7 @@ app.post("/api/auth/register", async (req, res) => {
   }
 
   const { name, username, email, password } = parsed.data;
-  const existing = db
-    .prepare("SELECT id FROM users WHERE email = ? OR username = ?")
-    .get(email.toLowerCase(), username.toLowerCase());
+  const existing = await findExistingUserByEmailOrUsername(email, username);
 
   if (existing) {
     return res.status(409).json({ error: "USER_EXISTS" });
@@ -336,12 +861,15 @@ app.post("/api/auth/register", async (req, res) => {
   const userId = generateId("usr");
   const passwordHash = await hashPassword(password);
 
-  db.prepare(
-    `INSERT INTO users (id, name, username, email, password_hash, plan, bio, website, twitter, github, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, 'Pro', '', '', '', '', ?, ?)`
-  ).run(userId, name, username.toLowerCase(), email.toLowerCase(), passwordHash, now, now);
-
-  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(userId);
+  const user = await createUserRecord({
+    id: userId,
+    name,
+    username: username.toLowerCase(),
+    email: email.toLowerCase(),
+    passwordHash,
+    createdAt: now,
+    updatedAt: now,
+  });
   const token = signToken({ sub: user.id, email: user.email, username: user.username });
 
   return res.status(201).json({ token, user: mapUser(user) });
@@ -359,7 +887,7 @@ app.post("/api/auth/login", async (req, res) => {
   }
 
   const { email, password } = parsed.data;
-  const user = db.prepare("SELECT * FROM users WHERE email = ?").get(email.toLowerCase());
+  const user = await getUserByEmail(email);
 
   if (!user) {
     return res.status(401).json({ error: "INVALID_CREDENTIALS" });
@@ -400,14 +928,14 @@ app.patch("/api/auth/profile", authMiddleware, async (req, res) => {
 
   const next = parsed.data;
   if (next.username && next.username !== req.user.username) {
-    const taken = db.prepare("SELECT id FROM users WHERE username = ? AND id != ?").get(next.username, req.user.id);
+    const taken = await isUsernameTaken(next.username, req.user.id);
     if (taken) {
       return res.status(409).json({ error: "USERNAME_TAKEN" });
     }
   }
 
   if (next.email && next.email !== req.user.email) {
-    const taken = db.prepare("SELECT id FROM users WHERE email = ? AND id != ?").get(next.email, req.user.id);
+    const taken = await isEmailTaken(next.email, req.user.id);
     if (taken) {
       return res.status(409).json({ error: "EMAIL_TAKEN" });
     }
@@ -425,20 +953,7 @@ app.patch("/api/auth/profile", authMiddleware, async (req, res) => {
     id: req.user.id,
   };
 
-  db.prepare(
-    `UPDATE users SET
-      name = @name,
-      username = @username,
-      email = @email,
-      bio = @bio,
-      website = @website,
-      twitter = @twitter,
-      github = @github,
-      updated_at = @updated_at
-     WHERE id = @id`
-  ).run(fields);
-
-  const updated = db.prepare("SELECT * FROM users WHERE id = ?").get(req.user.id);
+  const updated = await updateUserRecord(fields);
   await invalidateUserCaches({
     userId: req.user.id,
     username: req.user.username,
@@ -461,16 +976,7 @@ app.get("/api/posts", authMiddleware, async (req, res) => {
     res,
     key,
     async () => {
-      const params = [req.user.id];
-      let query = "SELECT * FROM posts WHERE user_id = ?";
-
-      if (normalizedStatus !== "all") {
-        query += " AND status = ?";
-        params.push(normalizedStatus);
-      }
-
-      query += " ORDER BY updated_at DESC";
-      const posts = db.prepare(query).all(...params).map(mapPost);
+      const posts = (await listPostsByUser(req.user.id, { status: normalizedStatus })).map(mapPost);
       return { data: posts };
     },
     60
@@ -499,33 +1005,27 @@ app.post("/api/posts", authMiddleware, async (req, res) => {
   const now = nowIso();
   const data = parsed.data;
   const rawSlug = slugify(data.slug || data.title || "untitled");
-  const slug = ensureUniqueSlug(req.user.id, rawSlug || "untitled");
+  const slug = await ensureUniqueSlug(req.user.id, rawSlug || "untitled");
   const status = data.status || "draft";
   const postId = generateId("pst");
 
-  db.prepare(
-    `INSERT INTO posts
-      (id, user_id, title, slug, excerpt, content_json, status, series, chapter, difficulty, tags_json, read_time, views, created_at, updated_at, published_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`
-  ).run(
-    postId,
-    req.user.id,
-    data.title,
+  const post = await createPostRecord({
+    id: postId,
+    user_id: req.user.id,
+    title: data.title,
     slug,
-    data.excerpt || "",
-    JSON.stringify(data.content || []),
+    excerpt: data.excerpt || "",
+    content_json: JSON.stringify(data.content || []),
     status,
-    data.series || "",
-    data.chapter ?? null,
-    data.difficulty || "intermediate",
-    JSON.stringify(data.tags || []),
-    data.readTime || "5 min",
-    now,
-    now,
-    status === "published" ? now : null
-  );
-
-  const post = db.prepare("SELECT * FROM posts WHERE id = ?").get(postId);
+    series: data.series || "",
+    chapter: data.chapter ?? null,
+    difficulty: data.difficulty || "intermediate",
+    tags_json: JSON.stringify(data.tags || []),
+    read_time: data.readTime || "5 min",
+    created_at: now,
+    updated_at: now,
+    published_at: status === "published" ? now : null,
+  });
   const mapped = mapPost(post);
   const eventType = status === "published" ? "post.published" : "post.created";
   await triggerWebhooks(req.user.id, eventType, mapped);
@@ -535,9 +1035,7 @@ app.post("/api/posts", authMiddleware, async (req, res) => {
 });
 
 app.patch("/api/posts/:id", authMiddleware, async (req, res) => {
-  const existing = db
-    .prepare("SELECT * FROM posts WHERE id = ? AND user_id = ?")
-    .get(req.params.id, req.user.id);
+  const existing = await getPostByIdAndUser(req.params.id, req.user.id);
 
   if (!existing) {
     return res.status(404).json({ error: "NOT_FOUND" });
@@ -566,27 +1064,10 @@ app.patch("/api/posts/:id", authMiddleware, async (req, res) => {
   const now = nowIso();
   const nextTitle = data.title ?? existing.title;
   const baseSlug = slugify(data.slug || data.title || existing.slug || "untitled");
-  const nextSlug = ensureUniqueSlug(req.user.id, baseSlug, existing.id);
+  const nextSlug = await ensureUniqueSlug(req.user.id, baseSlug, existing.id);
   const nextStatus = data.status ?? existing.status;
 
-  db.prepare(
-    `UPDATE posts SET
-      title = @title,
-      slug = @slug,
-      excerpt = @excerpt,
-      content_json = @content_json,
-      status = @status,
-      series = @series,
-      chapter = @chapter,
-      difficulty = @difficulty,
-      tags_json = @tags_json,
-      read_time = @read_time,
-      views = @views,
-      updated_at = @updated_at,
-      published_at = @published_at
-     WHERE id = @id`
-  ).run({
-    id: existing.id,
+  const updated = await updatePostRecord(existing.id, {
     title: nextTitle,
     slug: nextSlug,
     excerpt: data.excerpt ?? existing.excerpt,
@@ -604,8 +1085,6 @@ app.patch("/api/posts/:id", authMiddleware, async (req, res) => {
         ? existing.published_at || now
         : existing.published_at,
   });
-
-  const updated = db.prepare("SELECT * FROM posts WHERE id = ?").get(existing.id);
   const mapped = mapPost(updated);
   const eventType = nextStatus === "published" ? "post.published" : "post.updated";
   await triggerWebhooks(req.user.id, eventType, mapped);
@@ -615,53 +1094,46 @@ app.patch("/api/posts/:id", authMiddleware, async (req, res) => {
 });
 
 app.delete("/api/posts/:id", authMiddleware, async (req, res) => {
-  const existing = db
-    .prepare("SELECT * FROM posts WHERE id = ? AND user_id = ?")
-    .get(req.params.id, req.user.id);
+  const existing = await getPostByIdAndUser(req.params.id, req.user.id);
 
   if (!existing) {
     return res.status(404).json({ error: "NOT_FOUND" });
   }
 
-  db.prepare("DELETE FROM posts WHERE id = ?").run(existing.id);
+  await deletePost(existing.id);
   await triggerWebhooks(req.user.id, "post.deleted", mapPost(existing));
   await invalidateUserCaches({ userId: req.user.id, username: req.user.username });
   return res.status(204).send();
 });
 
 app.post("/api/posts/:id/view", async (req, res) => {
-  const post = db.prepare("SELECT * FROM posts WHERE id = ?").get(req.params.id);
+  const post = await getPostById(req.params.id);
   if (!post) {
     return res.status(404).json({ error: "NOT_FOUND" });
   }
 
-  db.prepare("UPDATE posts SET views = views + 1 WHERE id = ?").run(post.id);
-  db.prepare(
-    "INSERT INTO page_views (id, user_id, post_id, source, country, created_at) VALUES (?, ?, ?, ?, ?, ?)"
-  ).run(
-    generateId("pv"),
-    post.user_id,
-    post.id,
-    req.body?.source || "Direct",
-    req.body?.country || "Unknown",
-    nowIso()
-  );
-  const owner = db.prepare("SELECT username FROM users WHERE id = ?").get(post.user_id);
+  await incrementPostViews(post.id, Number(post.views || 0));
+  await insertPageView({
+    id: generateId("pv"),
+    user_id: post.user_id,
+    post_id: post.id,
+    source: req.body?.source || "Direct",
+    country: req.body?.country || "Unknown",
+    created_at: nowIso(),
+  });
+  const owner = await getUserById(post.user_id);
   await invalidateUserCaches({ userId: post.user_id, username: owner?.username });
 
   return res.json({ ok: true });
 });
 
-app.get("/api/api-keys", authMiddleware, (req, res) => {
-  const keys = db
-    .prepare("SELECT * FROM api_keys WHERE user_id = ? AND revoked = 0 ORDER BY created_at DESC")
-    .all(req.user.id)
-    .map(mapApiKey);
+app.get("/api/api-keys", authMiddleware, async (req, res) => {
+  const keys = (await listApiKeysByUser(req.user.id)).map(mapApiKey);
 
   return res.json({ data: keys });
 });
 
-app.post("/api/api-keys", authMiddleware, (req, res) => {
+app.post("/api/api-keys", authMiddleware, async (req, res) => {
   const schema = z.object({
     name: z.string().min(1),
     permissions: z.array(z.enum(["read", "write", "admin"])).min(1).default(["read"]),
@@ -680,47 +1152,37 @@ app.post("/api/api-keys", authMiddleware, (req, res) => {
 
   const masked = `${key.slice(0, 14)}••••`;
 
-  db.prepare(
-    `INSERT INTO api_keys
-      (id, user_id, name, key_prefix, key_hash, permissions_json, last_used_at, expires_at, revoked, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, NULL, ?, 0, ?)`
-  ).run(
+  const record = await createApiKeyRecord({
     id,
-    req.user.id,
-    data.name,
-    masked,
-    hashApiKey(key),
-    JSON.stringify(data.permissions),
-    data.expiresAt || null,
-    createdAt
-  );
-
-  const record = db.prepare("SELECT * FROM api_keys WHERE id = ?").get(id);
+    user_id: req.user.id,
+    name: data.name,
+    key_prefix: masked,
+    key_hash: hashApiKey(key),
+    permissions_json: JSON.stringify(data.permissions),
+    expires_at: data.expiresAt || null,
+    created_at: createdAt,
+    revoked: 0,
+  });
   return res.status(201).json({ data: mapApiKey(record), apiKey: key });
 });
 
-app.delete("/api/api-keys/:id", authMiddleware, (req, res) => {
-  const existing = db
-    .prepare("SELECT id FROM api_keys WHERE id = ? AND user_id = ?")
-    .get(req.params.id, req.user.id);
+app.delete("/api/api-keys/:id", authMiddleware, async (req, res) => {
+  const existing = await getApiKeyByIdAndUser(req.params.id, req.user.id);
 
   if (!existing) {
     return res.status(404).json({ error: "NOT_FOUND" });
   }
 
-  db.prepare("UPDATE api_keys SET revoked = 1 WHERE id = ?").run(existing.id);
+  await revokeApiKey(existing.id);
   return res.status(204).send();
 });
 
-app.get("/api/webhooks", authMiddleware, (req, res) => {
-  const hooks = db
-    .prepare("SELECT * FROM webhooks WHERE user_id = ? ORDER BY created_at DESC")
-    .all(req.user.id)
-    .map(mapWebhook);
+app.get("/api/webhooks", authMiddleware, async (req, res) => {
+  const hooks = (await getWebhooksByUser(req.user.id)).map(mapWebhook);
   return res.json({ data: hooks });
 });
 
-app.post("/api/webhooks", authMiddleware, (req, res) => {
+app.post("/api/webhooks", authMiddleware, async (req, res) => {
   const schema = z.object({
     name: z.string().min(1),
     url: z.string().url(),
@@ -734,20 +1196,19 @@ app.post("/api/webhooks", authMiddleware, (req, res) => {
 
   const data = parsed.data;
   const id = generateId("wh");
-  db.prepare(
-    `INSERT INTO webhooks
-      (id, user_id, name, url, events_json, is_active, last_status, last_triggered_at, created_at)
-     VALUES (?, ?, ?, ?, ?, 1, NULL, NULL, ?)`
-  ).run(id, req.user.id, data.name, data.url, JSON.stringify(data.events), nowIso());
-
-  const hook = db.prepare("SELECT * FROM webhooks WHERE id = ?").get(id);
+  const hook = await createWebhookRecord({
+    id,
+    user_id: req.user.id,
+    name: data.name,
+    url: data.url,
+    events_json: JSON.stringify(data.events),
+    created_at: nowIso(),
+  });
   return res.status(201).json({ data: mapWebhook(hook) });
 });
 
 app.post("/api/webhooks/:id/test", authMiddleware, async (req, res) => {
-  const hook = db
-    .prepare("SELECT * FROM webhooks WHERE id = ? AND user_id = ?")
-    .get(req.params.id, req.user.id);
+  const hook = await getWebhookByIdAndUser(req.params.id, req.user.id);
 
   if (!hook) {
     return res.status(404).json({ error: "NOT_FOUND" });
@@ -759,20 +1220,18 @@ app.post("/api/webhooks/:id/test", authMiddleware, async (req, res) => {
     source: "manual-test",
   });
 
-  const fresh = db.prepare("SELECT * FROM webhooks WHERE id = ?").get(hook.id);
+  const fresh = await getWebhookById(hook.id);
   return res.json({ data: mapWebhook(fresh) });
 });
 
-app.delete("/api/webhooks/:id", authMiddleware, (req, res) => {
-  const hook = db
-    .prepare("SELECT id FROM webhooks WHERE id = ? AND user_id = ?")
-    .get(req.params.id, req.user.id);
+app.delete("/api/webhooks/:id", authMiddleware, async (req, res) => {
+  const hook = await getWebhookByIdAndUser(req.params.id, req.user.id);
 
   if (!hook) {
     return res.status(404).json({ error: "NOT_FOUND" });
   }
 
-  db.prepare("DELETE FROM webhooks WHERE id = ?").run(hook.id);
+  await deleteWebhook(hook.id);
   return res.status(204).send();
 });
 
@@ -784,80 +1243,67 @@ app.get("/api/analytics/overview", authMiddleware, async (req, res) => {
     res,
     key,
     async () => {
-      const totalPosts = db.prepare("SELECT COUNT(*) as count FROM posts WHERE user_id = ?").get(userId).count;
-      const totalViews = db.prepare("SELECT COALESCE(SUM(views), 0) as views FROM posts WHERE user_id = ?").get(userId).views;
-      const publishedPosts = db
-        .prepare("SELECT COUNT(*) as count FROM posts WHERE user_id = ? AND status = 'published'")
-        .get(userId).count;
+      const posts = await listPostsByUser(userId, { status: "all" });
+      const pageViews = await listPageViewsByUser(userId);
 
-      const traffic = db
-        .prepare(
-          `SELECT source as name, COUNT(*) as value
-           FROM page_views
-           WHERE user_id = ?
-           GROUP BY source
-           ORDER BY value DESC
-           LIMIT 5`
-        )
-        .all(userId)
-        .map((row) => ({ name: row.name || "Other", value: Number(row.value) }));
+      const totalPosts = posts.length;
+      const totalViews = posts.reduce((sum, row) => sum + Number(row.views || 0), 0);
+      const publishedPosts = posts.filter((row) => row.status === "published").length;
 
-      const topPosts = db
-        .prepare(
-          `SELECT title, views
-           FROM posts
-           WHERE user_id = ?
-           ORDER BY views DESC
-           LIMIT 5`
-        )
-        .all(userId)
-        .map((row) => ({ name: `${row.title.split(" ").slice(0, 3).join(" ")}…`, views: row.views }));
+      const trafficMap = new Map();
+      pageViews.forEach((view) => {
+        const source = view.source || "Other";
+        trafficMap.set(source, (trafficMap.get(source) || 0) + 1);
+      });
+      const traffic = [...trafficMap.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([name, value]) => ({ name, value }));
 
-      const chart = db
-        .prepare(
-          `SELECT substr(created_at,1,10) as day, COUNT(*) as views
-           FROM page_views
-           WHERE user_id = ? AND created_at >= datetime('now','-30 day')
-           GROUP BY substr(created_at,1,10)
-           ORDER BY day ASC`
-        )
-        .all(userId)
-        .map((row) => ({ day: row.day, views: Number(row.views) }));
+      const topPosts = [...posts]
+        .sort((a, b) => Number(b.views || 0) - Number(a.views || 0))
+        .slice(0, 5)
+        .map((row) => ({ name: `${row.title.split(" ").slice(0, 3).join(" ")}…`, views: Number(row.views || 0) }));
 
-      const geo = db
-        .prepare(
-          `SELECT country, COUNT(*) as visitors
-           FROM page_views
-           WHERE user_id = ?
-           GROUP BY country
-           ORDER BY visitors DESC
-           LIMIT 5`
-        )
-        .all(userId)
-        .map((row) => ({
-          country: row.country || "Unknown",
-          visitors: Number(row.visitors),
-        }));
+      const thirtyDaysAgo = Date.now() - 30 * 86400000;
+      const chartMap = new Map();
+      pageViews.forEach((view) => {
+        const created = new Date(view.created_at || 0).getTime();
+        if (!Number.isFinite(created) || created < thirtyDaysAgo) {
+          return;
+        }
+        const day = String(view.created_at || "").slice(0, 10);
+        chartMap.set(day, (chartMap.get(day) || 0) + 1);
+      });
+      const chart = [...chartMap.entries()]
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([day, views]) => ({ day, views }));
 
-      const performance = db
-        .prepare(
-          `SELECT id, title, views, read_time, series, status, created_at
-           FROM posts
-           WHERE user_id = ?
-           ORDER BY views DESC`
-        )
-        .all(userId)
+      const geoMap = new Map();
+      pageViews.forEach((view) => {
+        const country = view.country || "Unknown";
+        geoMap.set(country, (geoMap.get(country) || 0) + 1);
+      });
+      const geo = [...geoMap.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([country, visitors]) => ({ country, visitors }));
+
+      const performance = [...posts]
+        .sort((a, b) => Number(b.views || 0) - Number(a.views || 0))
         .map((row) => ({
           id: row.id,
           title: row.title,
-          views: row.views,
-          avgRead: `${40 + (row.views % 35)}%`,
-          subscribers: Math.floor(row.views / 8),
-          published: row.created_at.slice(0, 10),
+          views: Number(row.views || 0),
+          avgRead: `${40 + (Number(row.views || 0) % 35)}%`,
+          subscribers: Math.floor(Number(row.views || 0) / 8),
+          published: String(row.created_at || "").slice(0, 10),
           series: row.series || "General",
           status: row.status,
           readTime: row.read_time,
         }));
+
+      const webhookLogCount = await countWebhookLogs();
 
       return {
         data: {
@@ -867,7 +1313,7 @@ app.get("/api/analytics/overview", authMiddleware, async (req, res) => {
             uniqueVisitors: Math.floor(totalViews * 0.48),
             avgReadTime: "6.2 min",
             subscribers: 800 + publishedPosts * 13,
-            apiCalls: db.prepare("SELECT COUNT(*) as count FROM webhook_logs").get().count + 1200,
+            apiCalls: webhookLogCount + 1200,
           },
           traffic,
           topPosts,
@@ -890,27 +1336,19 @@ app.get("/api/public/:username/profile", async (req, res) => {
     return res.json(cached);
   }
 
-  const user = db.prepare("SELECT * FROM users WHERE username = ?").get(username);
+  const user = await getUserByUsername(username);
   if (!user) {
     return res.status(404).json({ error: "NOT_FOUND" });
   }
 
-  const counts = db
-    .prepare(
-      `SELECT
-         COUNT(*) as total_posts,
-         COALESCE(SUM(CASE WHEN status = 'published' THEN views ELSE 0 END), 0) as total_views
-       FROM posts
-       WHERE user_id = ?`
-    )
-    .get(user.id);
+  const counts = await countPostsAndPublishedViewsByUser(user.id);
 
   const payload = {
     data: {
       ...mapUser(user),
       stats: {
-        posts: counts.total_posts,
-        views: counts.total_views,
+        posts: counts.totalPosts,
+        views: counts.totalPublishedViews,
       },
     },
   };
@@ -929,15 +1367,12 @@ app.get("/api/public/:username/posts", async (req, res) => {
     return res.json(cached);
   }
 
-  const user = db.prepare("SELECT * FROM users WHERE username = ?").get(username);
+  const user = await getUserByUsername(username);
   if (!user) {
     return res.status(404).json({ error: "NOT_FOUND" });
   }
 
-  const posts = db
-    .prepare("SELECT * FROM posts WHERE user_id = ? AND status = 'published' ORDER BY published_at DESC, updated_at DESC")
-    .all(user.id)
-    .map(mapPost);
+  const posts = (await listPostsByUser(user.id, { onlyPublished: true, publicOrder: true })).map(mapPost);
 
   const payload = { data: posts };
   await cacheSet(key, payload, 120);
@@ -946,27 +1381,30 @@ app.get("/api/public/:username/posts", async (req, res) => {
 });
 
 app.get("/api/public/:username/posts/:slug", async (req, res) => {
-  const user = db.prepare("SELECT * FROM users WHERE username = ?").get(req.params.username);
+  const user = await getUserByUsername(req.params.username);
   if (!user) {
     return res.status(404).json({ error: "NOT_FOUND" });
   }
 
-  const post = db
-    .prepare("SELECT * FROM posts WHERE user_id = ? AND slug = ? AND status = 'published'")
-    .get(user.id, req.params.slug);
+  const post = await getPostByUserAndSlug(user.id, req.params.slug, { publishedOnly: true });
 
   if (!post) {
     return res.status(404).json({ error: "NOT_FOUND" });
   }
 
-  db.prepare("UPDATE posts SET views = views + 1 WHERE id = ?").run(post.id);
-  db.prepare(
-    "INSERT INTO page_views (id, user_id, post_id, source, country, created_at) VALUES (?, ?, ?, ?, ?, ?)"
-  ).run(generateId("pv"), user.id, post.id, "Direct", "Unknown", nowIso());
+  await incrementPostViews(post.id, Number(post.views || 0));
+  await insertPageView({
+    id: generateId("pv"),
+    user_id: user.id,
+    post_id: post.id,
+    source: "Direct",
+    country: "Unknown",
+    created_at: nowIso(),
+  });
 
   await invalidateUserCaches({ userId: user.id, username: user.username });
 
-  const fresh = db.prepare("SELECT * FROM posts WHERE id = ?").get(post.id);
+  const fresh = await getPostById(post.id);
   return res.json({ data: mapPost(fresh) });
 });
 
@@ -978,17 +1416,7 @@ app.get("/v1/posts", apiKeyMiddleware, async (req, res) => {
     res,
     key,
     async () => {
-      let query = "SELECT * FROM posts WHERE user_id = ?";
-      const params = [req.keyUser.id];
-
-      if (status !== "all") {
-        query += " AND status = ?";
-        params.push(status);
-      }
-
-      query += " ORDER BY updated_at DESC";
-
-      const posts = db.prepare(query).all(...params).map(mapPost);
+      const posts = (await listPostsByUser(req.keyUser.id, { status })).map(mapPost);
       return { data: posts };
     },
     60
@@ -1003,9 +1431,7 @@ app.get("/v1/posts/:slug", apiKeyMiddleware, async (req, res) => {
     return res.json(cached);
   }
 
-  const post = db
-    .prepare("SELECT * FROM posts WHERE user_id = ? AND slug = ?")
-    .get(req.keyUser.id, req.params.slug);
+  const post = await getPostByUserAndSlug(req.keyUser.id, req.params.slug);
 
   if (!post) {
     return res.status(404).json({ error: "NOT_FOUND" });

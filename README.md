@@ -37,6 +37,7 @@ Scribe is designed to be a practical middle ground:
 - Analytics overview API
 - Caching with Upstash Redis (fallback: in-memory cache)
 - Supabase migration script and schema
+- Runtime provider switch: SQLite or Supabase (`DATA_PROVIDER`)
 
 ## Tech Stack
 
@@ -159,6 +160,7 @@ Use `.env.example` as source of truth.
 - `API_PORT` (default `8787`)
 - `JWT_SECRET` (change for production)
 - `DB_PATH` (default `backend/data/scribe.db`)
+- `DATA_PROVIDER` (`sqlite` or `supabase`)
 
 ### Optional but recommended
 
@@ -318,6 +320,21 @@ Supported categories include:
 - SQLite (`better-sqlite3`) via `backend/data/scribe.db`
 - Auto-migration + seed data on startup
 
+### Supabase runtime mode
+
+- Set `DATA_PROVIDER=supabase`
+- Ensure valid:
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - `SUPABASE_SERVICE_ROLE_KEY`
+- Run:
+
+```bash
+npm run supabase:bind
+```
+
+With this, API runtime reads/writes directly against Supabase tables.
+
 ### Supabase migration path
 
 1. Set real Supabase env values in `.env`:
@@ -363,7 +380,7 @@ Optional reset before migration:
 npm run migrate:supabase -- --reset
 ```
 
-Note: runtime API currently uses SQLite as primary datastore; migration script prepares parity data in Supabase.
+Note: if `DATA_PROVIDER=sqlite`, you can still keep Supabase synced using migration scripts.
 
 ## Caching
 

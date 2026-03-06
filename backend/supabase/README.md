@@ -46,5 +46,5 @@ npm run migrate:supabase -- --reset
 ```
 
 ## Notes
-- Current backend continues to run with SQLite by default, but this migrates all existing data to Supabase tables.
+- Backend defaults to SQLite, but you can switch runtime to Supabase by setting `DATA_PROVIDER=supabase`.
 - Caching works with Upstash Redis if `UPSTASH_REDIS_URL` + `UPSTASH_REDIS_TOKEN` are real values, otherwise local-memory fallback is used.
