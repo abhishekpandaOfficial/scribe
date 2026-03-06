@@ -8,13 +8,11 @@ function isConfigured(value) {
   return !String(value).includes("xxx") && !String(value).includes("...");
 }
 
-const hasSupabaseConfig = Boolean(
-  isConfigured(config.supabase.url) &&
-    isConfigured(config.supabase.anonKey) &&
-    isConfigured(config.supabase.serviceRoleKey)
-);
+const hasSupabaseUrl = Boolean(isConfigured(config.supabase.url));
+const hasSupabaseAnon = Boolean(hasSupabaseUrl && isConfigured(config.supabase.anonKey));
+const hasSupabaseAdmin = Boolean(hasSupabaseUrl && isConfigured(config.supabase.serviceRoleKey));
 
-export const supabaseAdmin = hasSupabaseConfig
+export const supabaseAdmin = hasSupabaseAdmin
   ? createClient(config.supabase.url, config.supabase.serviceRoleKey, {
       auth: {
         autoRefreshToken: false,
@@ -23,7 +21,7 @@ export const supabaseAdmin = hasSupabaseConfig
     })
   : null;
 
-export const supabasePublic = hasSupabaseConfig
+export const supabasePublic = hasSupabaseAnon
   ? createClient(config.supabase.url, config.supabase.anonKey, {
       auth: {
         autoRefreshToken: false,
@@ -33,6 +31,8 @@ export const supabasePublic = hasSupabaseConfig
   : null;
 
 export const supabaseMeta = {
-  enabled: hasSupabaseConfig,
+  enabled: hasSupabaseAdmin,
+  adminEnabled: hasSupabaseAdmin,
+  publicEnabled: hasSupabaseAnon,
   url: config.supabase.url || null,
 };

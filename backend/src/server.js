@@ -14,7 +14,7 @@ import {
   verifyPassword,
   verifyToken,
 } from "./lib/security.js";
-import { supabaseAdmin, supabaseMeta } from "./lib/supabase.js";
+import { supabaseAdmin, supabaseMeta, supabasePublic } from "./lib/supabase.js";
 
 const app = express();
 
@@ -90,6 +90,24 @@ function mapPost(row) {
   };
 }
 
+function mapPublicProfile(row) {
+  if (!row) {
+    return null;
+  }
+  return {
+    id: row.id,
+    name: row.name,
+    username: row.username,
+    plan: row.plan,
+    bio: row.bio || "",
+    website: row.website || "",
+    twitter: row.twitter || "",
+    github: row.github || "",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 function mapApiKey(row) {
   return {
     id: row.id,
@@ -129,6 +147,7 @@ function formatRelative(iso) {
 
 const prefersSupabase = config.dataProvider === "supabase";
 const usingSupabase = prefersSupabase && Boolean(supabaseAdmin);
+const usingSupabasePublic = usingSupabase && Boolean(supabasePublic);
 
 if (prefersSupabase && !usingSupabase) {
   // eslint-disable-next-line no-console
@@ -164,6 +183,21 @@ async function getUserByUsername(username) {
   }
   const result = await supabaseAdmin.from("users").select("*").eq("username", username.toLowerCase()).maybeSingle();
   return assertSupabase(result, "getUserByUsername");
+}
+
+async function getPublicProfileByUsername(username) {
+  if (!usingSupabase) {
+    return getUserByUsername(username);
+  }
+  if (!usingSupabasePublic) {
+    return getUserByUsername(username);
+  }
+  const result = await supabasePublic
+    .from("public_profiles")
+    .select("*")
+    .eq("username", username.toLowerCase())
+    .maybeSingle();
+  return assertSupabase(result, "getPublicProfileByUsername");
 }
 
 async function getFirstUser() {
@@ -514,6 +548,23 @@ async function listPostsByUser(userId, { status = "all", onlyPublished = false, 
   return assertSupabase(result, "listPostsByUser");
 }
 
+async function listPublishedPostsByUserPublic(userId) {
+  if (!usingSupabase) {
+    return listPostsByUser(userId, { onlyPublished: true, publicOrder: true });
+  }
+  if (!usingSupabasePublic) {
+    return listPostsByUser(userId, { onlyPublished: true, publicOrder: true });
+  }
+  const result = await supabasePublic
+    .from("posts")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("status", "published")
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .order("updated_at", { ascending: false });
+  return assertSupabase(result, "listPublishedPostsByUserPublic");
+}
+
 async function getPostById(id) {
   if (!usingSupabase) {
     return db.prepare("SELECT * FROM posts WHERE id = ?").get(id);
@@ -537,7 +588,8 @@ async function getPostByUserAndSlug(userId, slug, { publishedOnly = false } = {}
       : "SELECT * FROM posts WHERE user_id = ? AND slug = ?";
     return db.prepare(query).get(userId, slug);
   }
-  let q = supabaseAdmin.from("posts").select("*").eq("user_id", userId).eq("slug", slug);
+  const client = publishedOnly && usingSupabasePublic ? supabasePublic : supabaseAdmin;
+  let q = client.from("posts").select("*").eq("user_id", userId).eq("slug", slug);
   if (publishedOnly) {
     q = q.eq("status", "published");
   }
@@ -646,16 +698,6 @@ async function listPageViewsByUser(userId) {
   }
   const result = await supabaseAdmin.from("page_views").select("*").eq("user_id", userId);
   return assertSupabase(result, "listPageViewsByUser");
-}
-
-async function countPostsAndPublishedViewsByUser(userId) {
-  const posts = await listPostsByUser(userId, { status: "all" });
-  return {
-    totalPosts: posts.length,
-    totalPublishedViews: posts
-      .filter((post) => post.status === "published")
-      .reduce((sum, post) => sum + Number(post.views || 0), 0),
-  };
 }
 
 async function authMiddleware(req, res, next) {
@@ -1336,19 +1378,20 @@ app.get("/api/public/:username/profile", async (req, res) => {
     return res.json(cached);
   }
 
-  const user = await getUserByUsername(username);
+  const user = await getPublicProfileByUsername(username);
   if (!user) {
     return res.status(404).json({ error: "NOT_FOUND" });
   }
 
-  const counts = await countPostsAndPublishedViewsByUser(user.id);
+  const publishedPosts = await listPublishedPostsByUserPublic(user.id);
+  const totalPublishedViews = publishedPosts.reduce((sum, post) => sum + Number(post.views || 0), 0);
 
   const payload = {
     data: {
-      ...mapUser(user),
+      ...mapPublicProfile(user),
       stats: {
-        posts: counts.totalPosts,
-        views: counts.totalPublishedViews,
+        posts: publishedPosts.length,
+        views: totalPublishedViews,
       },
     },
   };
@@ -1367,12 +1410,12 @@ app.get("/api/public/:username/posts", async (req, res) => {
     return res.json(cached);
   }
 
-  const user = await getUserByUsername(username);
+  const user = await getPublicProfileByUsername(username);
   if (!user) {
     return res.status(404).json({ error: "NOT_FOUND" });
   }
 
-  const posts = (await listPostsByUser(user.id, { onlyPublished: true, publicOrder: true })).map(mapPost);
+  const posts = (await listPublishedPostsByUserPublic(user.id)).map(mapPost);
 
   const payload = { data: posts };
   await cacheSet(key, payload, 120);
@@ -1381,7 +1424,7 @@ app.get("/api/public/:username/posts", async (req, res) => {
 });
 
 app.get("/api/public/:username/posts/:slug", async (req, res) => {
-  const user = await getUserByUsername(req.params.username);
+  const user = await getPublicProfileByUsername(req.params.username);
   if (!user) {
     return res.status(404).json({ error: "NOT_FOUND" });
   }

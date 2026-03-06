@@ -38,6 +38,7 @@ Scribe is designed to be a practical middle ground:
 - Caching with Upstash Redis (fallback: in-memory cache)
 - Supabase migration script and schema
 - Runtime provider switch: SQLite or Supabase (`DATA_PROVIDER`)
+- Supabase RLS + safe `public_profiles` view for anonymous public profile reads
 
 ## Tech Stack
 
@@ -334,6 +335,7 @@ npm run supabase:bind
 ```
 
 With this, API runtime reads/writes directly against Supabase tables.
+Public endpoints use anon-scope reads (`supabasePublic`) backed by RLS policies.
 
 ### Supabase migration path
 
@@ -432,7 +434,7 @@ Suggested next OSS steps:
 
 ## Known Gaps / Roadmap
 
-- Runtime datastore abstraction to switch SQLite/Supabase at request layer
+- Align custom JWT auth with Supabase Auth identity mapping for first-class RLS ownership policies
 - Media upload API implementation (`/v1/media` currently UI docs only)
 - Stripe billing flows and webhook verification
 - Inngest event publishing and Tinybird ingestion
@@ -443,6 +445,7 @@ Suggested next OSS steps:
 - Never expose `SUPABASE_SERVICE_ROLE_KEY` to client/browser
 - API keys are shown once on creation; store safely
 - Rotate secrets regularly in production
+- Supabase RLS policies are included for published-only public post reads
 
 ---
 
