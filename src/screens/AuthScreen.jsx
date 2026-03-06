@@ -1,12 +1,11 @@
 import { useState } from "react";
-import LocalhostBypassButton from "../components/LocalhostBypassButton";
 import AuthField from "../components/auth/AuthField";
 import AuthTabs from "../components/auth/AuthTabs";
 import SocialAuthButtons from "../components/auth/SocialAuthButtons";
 import { Btn } from "../components/ui";
 import { authApi } from "../lib/apiClient";
 
-export default function AuthScreen({ mode, setScreen, toast, onLocalBypass, onAuthSuccess }) {
+export default function AuthScreen({ mode, setScreen, toast, onAuthSuccess }) {
   const [tab, setTab] = useState(mode === "signup" ? "signup" : "login");
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
@@ -157,7 +156,7 @@ export default function AuthScreen({ mode, setScreen, toast, onLocalBypass, onAu
               letterSpacing: "-0.5px",
             }}
           >
-            scri·be
+            SCRIBE
           </div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text3)", marginTop: 3 }}>
             Developer-first publishing
@@ -294,18 +293,6 @@ export default function AuthScreen({ mode, setScreen, toast, onLocalBypass, onAu
         >
           {tab === "login" ? "Continue →" : "Create free account →"}
         </Btn>
-
-        <div style={{ marginTop: 10 }}>
-          <LocalhostBypassButton
-            onBypass={async () => {
-              const ok = await onLocalBypass?.();
-              if (ok) {
-                setScreen("dashboard");
-              }
-            }}
-            style={{ width: "100%" }}
-          />
-        </div>
 
         <p style={{ textAlign: "center", marginTop: 16, fontSize: 12, color: "var(--text3)" }}>
           {tab === "login" ? (

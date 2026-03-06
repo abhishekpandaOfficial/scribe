@@ -2,7 +2,7 @@
 
 A block-based technical writing SaaS starter built with React + Vite and an Express API.
 
-Scribe helps creators draft, preview, publish, and distribute technical content with API-first workflows, webhook automation, analytics views, and a localhost auth bypass for fast local development.
+Scribe helps creators draft, preview, publish, and distribute technical content with API-first workflows, webhook automation, and analytics views.
 
 ## Tags
 
@@ -20,13 +20,12 @@ Scribe is designed to be a practical middle ground:
 - Rich block editor for technical posts (code, tables, charts, callouts, diagrams, etc.)
 - API-first content access for external apps (`/v1/*` + public endpoints)
 - Webhook triggers on content lifecycle events
-- Local-first development with seeded data and localhost auth bypass
+- Local-first development with seeded data
 - Migration path to Supabase persistence and Upstash cache
 
 ## Core Features
 
 - Landing page with dark/light theme toggle and animated hero UI
-- Localhost bypass button (visible only on localhost)
 - Auth: register, login, profile update, JWT session
 - Dashboard with KPIs, post filters, and editing flow
 - Slash-command editor (`/`) with block insertion
@@ -130,7 +129,6 @@ Default URLs:
 ### 4) Sign in options
 
 - Standard auth: register/login from UI
-- Fast local flow: click `Localhost bypass` button (localhost only)
 
 Seeded local account (created automatically in SQLite on first run):
 
@@ -205,7 +203,6 @@ Note: this section documents currently implemented backend routes. The in-app AP
 - `POST /api/auth/login`
 - `GET /api/auth/me`
 - `PATCH /api/auth/profile`
-- `POST /api/auth/local-bypass` (non-production only)
 
 ### Posts (dashboard/private)
 
@@ -399,7 +396,7 @@ Key invalidation runs automatically after content/profile updates.
 Minimum production hardening checklist:
 
 - Set strong `JWT_SECRET`
-- Disable/avoid local bypass in production (`NODE_ENV=production`)
+- Enforce strong auth policies in production
 - Use managed database backup strategy
 - Configure CORS to explicit origins
 - Set real Upstash Redis credentials
@@ -413,7 +410,7 @@ If users just want to run locally without setup complexity:
 2. `npm install`
 3. `cp .env.example .env`
 4. `npm run dev`
-5. Open frontend URL and click `Localhost bypass`
+5. Open frontend URL and sign in with your account
 
 ## Open Source Status
 

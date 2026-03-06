@@ -66,7 +66,7 @@ export default function Sidebar({ screen, setScreen, user, onLogout }) {
             letterSpacing: "-0.5px",
           }}
         >
-          scri·be
+          SCRIBE
         </span>
         <Badge variant="pro" style={{ marginLeft: "auto", fontSize: "9px" }}>
           PRO

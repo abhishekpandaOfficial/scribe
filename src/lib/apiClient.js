@@ -40,9 +40,6 @@ export const authApi = {
   updateProfile(token, payload) {
     return request("/api/auth/profile", { method: "PATCH", token, body: payload });
   },
-  localBypass() {
-    return request("/api/auth/local-bypass", { method: "POST" });
-  },
 };
 
 export const postsApi = {

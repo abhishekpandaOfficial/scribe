@@ -200,14 +200,6 @@ async function getPublicProfileByUsername(username) {
   return assertSupabase(result, "getPublicProfileByUsername");
 }
 
-async function getFirstUser() {
-  if (!usingSupabase) {
-    return db.prepare("SELECT * FROM users ORDER BY created_at ASC LIMIT 1").get();
-  }
-  const result = await supabaseAdmin.from("users").select("*").order("created_at", { ascending: true }).limit(1);
-  return assertSupabase(result, "getFirstUser")?.[0] || null;
-}
-
 async function findExistingUserByEmailOrUsername(email, username) {
   if (!usingSupabase) {
     return db.prepare("SELECT id FROM users WHERE email = ? OR username = ?").get(email.toLowerCase(), username.toLowerCase());
@@ -860,20 +852,6 @@ app.get("/health", (_req, res) => {
     cache: cacheMeta,
     supabase: supabaseMeta,
   });
-});
-
-app.post("/api/auth/local-bypass", async (_req, res) => {
-  if (process.env.NODE_ENV === "production") {
-    return res.status(403).json({ error: "NOT_ALLOWED" });
-  }
-
-  const user = await getFirstUser();
-  if (!user) {
-    return res.status(404).json({ error: "NO_LOCAL_USER" });
-  }
-
-  const token = signToken({ sub: user.id, email: user.email, username: user.username });
-  return res.json({ token, user: mapUser(user) });
 });
 
 app.post("/api/auth/register", async (req, res) => {

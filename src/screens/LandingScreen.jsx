@@ -1,7 +1,6 @@
-import LocalhostBypassButton from "../components/LocalhostBypassButton";
 import { Btn } from "../components/ui";
 
-export default function LandingScreen({ setScreen, onLocalBypass }) {
+export default function LandingScreen({ setScreen }) {
   const features = [
     {
       icon: "🧱",
@@ -127,7 +126,7 @@ export default function LandingScreen({ setScreen, onLocalBypass }) {
             S
           </div>
           <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 17, color: "var(--text)", letterSpacing: "-0.5px" }}>
-            scri·be
+            SCRIBE
           </span>
         </div>
 
@@ -149,15 +148,6 @@ export default function LandingScreen({ setScreen, onLocalBypass }) {
         </div>
 
         <div className="landing-nav-actions">
-          <LocalhostBypassButton
-            onBypass={async () => {
-              const ok = await onLocalBypass?.();
-              if (ok) {
-                setScreen("dashboard");
-              }
-            }}
-            label="Localhost bypass"
-          />
           <Btn variant="ghost" size="sm" onClick={() => setScreen("login")}>Log in</Btn>
           <Btn variant="primary" size="sm" onClick={() => setScreen("signup")}>Start free →</Btn>
         </div>
@@ -540,7 +530,7 @@ return data.filter(post => post.status === 'published');`}</pre>
         <div className="landing-main" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 24, height: 24, borderRadius: 6, background: "linear-gradient(135deg,var(--accent),var(--blue))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: "#000", fontFamily: "var(--font-display)" }}>S</div>
-            <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 15, color: "var(--text)" }}>scri·be</span>
+            <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 15, color: "var(--text)" }}>SCRIBE</span>
           </div>
           <div style={{ display: "flex", gap: 24 }}>
             {["Product", "Docs", "Pricing", "Blog", "GitHub"].map((link) => (

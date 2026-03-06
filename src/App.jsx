@@ -149,18 +149,6 @@ export default function App() {
     [toast]
   );
 
-  const handleLocalBypass = useCallback(async () => {
-    try {
-      const response = await authApi.localBypass();
-      handleAuthSuccess(response);
-      toast("Localhost bypass enabled", "info");
-      return true;
-    } catch (error) {
-      toast(error.message || "Localhost bypass failed", "error");
-      return false;
-    }
-  }, [handleAuthSuccess, toast]);
-
   const handleLogout = () => {
     clearSession();
     setSession(null);
@@ -221,13 +209,12 @@ export default function App() {
             overflow: isFullScreen ? "visible" : "hidden",
           }}
         >
-          {screen === "landing" && <LandingScreen setScreen={setScreen} onLocalBypass={handleLocalBypass} />}
+          {screen === "landing" && <LandingScreen setScreen={setScreen} />}
           {screen === "login" && (
             <AuthScreen
               mode="login"
               setScreen={setScreen}
               toast={(msg, type) => toast(msg, type || "success")}
-              onLocalBypass={handleLocalBypass}
               onAuthSuccess={handleAuthSuccess}
             />
           )}
@@ -236,7 +223,6 @@ export default function App() {
               mode="signup"
               setScreen={setScreen}
               toast={(msg, type) => toast(msg, type || "success")}
-              onLocalBypass={handleLocalBypass}
               onAuthSuccess={handleAuthSuccess}
             />
           )}
