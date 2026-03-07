@@ -49,6 +49,7 @@ function toUiPost(post) {
 export default function App() {
   const [theme, setTheme] = useState(loadStoredTheme);
   const [editPost, setEditPost] = useState(null);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [session, setSession] = useState(loadSession());
   const [posts, setPosts] = useState([]);
   const [booting, setBooting] = useState(true);
@@ -273,15 +274,18 @@ export default function App() {
                 token ? (
                   <EditorScreen
                     post={editPost}
+                    selectedTemplate={selectedTemplate}
                     setScreen={setScreen}
                     toast={(msg, type) => toast(msg, type || "success")}
                     token={apiContext.token}
                     onPostSaved={(saved) => {
                       setEditPost(toUiPost(saved));
+                      setSelectedTemplate(null);
                       refreshPosts();
                     }}
                     onPostDeleted={() => {
                       setEditPost(null);
+                      setSelectedTemplate(null);
                       refreshPosts();
                       setScreen("dashboard");
                     }}
@@ -295,7 +299,14 @@ export default function App() {
               path="/templates"
               element={
                 token ? (
-                  <TemplatesScreen setScreen={setScreen} toast={(msg) => toast(msg, "success")} />
+                  <TemplatesScreen
+                    setScreen={setScreen}
+                    toast={(msg) => toast(msg, "success")}
+                    onSelectTemplate={(template) => {
+                      setEditPost(null);
+                      setSelectedTemplate(template);
+                    }}
+                  />
                 ) : (
                   <Navigate to="/login" replace />
                 )

@@ -114,7 +114,7 @@ async function seed() {
     id: userId,
     name: "Abhishek Panda",
     username: "abhishekpanda",
-    email: "abhishek@abhishekpanda.com",
+    email: "hello@abhishekpanda.com",
     password_hash: passwordHash,
     plan: "Pro",
     bio: "Senior .NET Engineer · Writing about performance, architecture, and real-world C#. 22K readers.",
@@ -124,88 +124,6 @@ async function seed() {
     created_at: now,
     updated_at: now,
   });
-
-  const posts = [
-    {
-      id: generateId("pst"),
-      title: "The async/await State Machine",
-      slug: "async-await-state-machine",
-      excerpt: "Deep dive into how the C# compiler transforms async/await into an IAsyncStateMachine struct...",
-      status: "published",
-      series: "C# Mastery",
-      chapter: 22,
-      difficulty: "advanced",
-      tags_json: JSON.stringify(["CLR", "async", "performance"]),
-      read_time: "7 min",
-      views: 4821,
-      published_at: now,
-    },
-    {
-      id: generateId("pst"),
-      title: "Zero-Allocation Patterns in .NET 9",
-      slug: "zero-allocation-patterns",
-      excerpt: "Using Span<T>, Memory<T>, and ref structs to eliminate GC pressure in hot paths...",
-      status: "published",
-      series: "C# Mastery",
-      chapter: 21,
-      difficulty: "architect",
-      tags_json: JSON.stringify(["performance", ".NET 9", "Span"]),
-      read_time: "9 min",
-      views: 3204,
-      published_at: now,
-    },
-    {
-      id: generateId("pst"),
-      title: "Microservices with .NET Aspire",
-      slug: "microservices-dotnet-aspire",
-      excerpt: "Building distributed systems with the new .NET Aspire orchestration framework...",
-      status: "draft",
-      series: "Cloud Architecture",
-      chapter: 1,
-      difficulty: "intermediate",
-      tags_json: JSON.stringify(["microservices", "Aspire", "Docker"]),
-      read_time: "6 min",
-      views: 0,
-      published_at: null,
-    },
-  ];
-
-  const insertPost = db.prepare(
-    `INSERT INTO posts
-      (id, user_id, title, slug, excerpt, content_json, status, series, chapter, difficulty, tags_json, read_time, views, created_at, updated_at, published_at)
-     VALUES
-      (@id, @user_id, @title, @slug, @excerpt, @content_json, @status, @series, @chapter, @difficulty, @tags_json, @read_time, @views, @created_at, @updated_at, @published_at)`
-  );
-
-  const insertView = db.prepare(
-    `INSERT INTO page_views (id, user_id, post_id, source, country, created_at)
-     VALUES (@id, @user_id, @post_id, @source, @country, @created_at)`
-  );
-
-  for (const post of posts) {
-    insertPost.run({
-      ...post,
-      user_id: userId,
-      content_json: JSON.stringify([{ type: "paragraph", content: post.excerpt }]),
-      created_at: now,
-      updated_at: now,
-    });
-
-    const sources = ["Direct", "Google", "Twitter", "GitHub", "Other"];
-    const countries = ["India", "USA", "UK", "Germany", "Canada"];
-
-    const views = Math.max(post.views, 10);
-    for (let i = 0; i < views; i += 1) {
-      insertView.run({
-        id: generateId("pv"),
-        user_id: userId,
-        post_id: post.id,
-        source: sources[i % sources.length],
-        country: countries[i % countries.length],
-        created_at: new Date(Date.now() - (i % 30) * 86400000).toISOString(),
-      });
-    }
-  }
 }
 
 export async function initDb() {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BLOCK_TYPES, makeBlock } from "../data/mockData";
 import { Btn } from "../components/ui";
 import BlockContentRenderer from "../components/editor/BlockContentRenderer";
@@ -33,8 +33,45 @@ function inferTags(post, blocks) {
   return tags.slice(0, 5);
 }
 
+function slugify(input = "") {
+  return String(input)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\\s-]/g, "")
+    .replace(/\\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function inferTemplateKind(template) {
+  const text = `${template?.name || ""} ${template?.category || ""}`.toLowerCase();
+  if (text.includes("series") || text.includes("curriculum") || text.includes("chapter")) {
+    return "series";
+  }
+  if (text.includes("guide") || text.includes("course") || text.includes("interview") || text.includes("tutorial")) {
+    return "playlist";
+  }
+  if (text.includes("journal") || text.includes("release") || text.includes("announcement") || text.includes("retrospective")) {
+    return "blog";
+  }
+  return "article";
+}
+
+function buildBlocksFromTemplate(template) {
+  const kind = inferTemplateKind(template);
+  const seedByKind = {
+    article: ["h1", "lead", "h2", "paragraph", "code", "quote"],
+    blog: ["h1", "lead", "paragraph", "image", "callout-insight", "paragraph"],
+    series: ["h1", "lead", "steps", "h2", "paragraph", "toggle"],
+    playlist: ["h1", "lead", "numbered", "h2", "tabs", "paragraph"],
+  };
+
+  return (seedByKind[kind] || seedByKind.article).map((type) => makeBlock(type));
+}
+
 export default function EditorScreen({
   post,
+  selectedTemplate,
   setScreen,
   toast,
   token,
@@ -51,12 +88,27 @@ export default function EditorScreen({
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
+  const [templateApplied, setTemplateApplied] = useState(false);
 
   const groupedBlocks = useMemo(() => getGroupedBlockTypes(query), [query]);
   const hasHeadingBlock = useMemo(
     () => blocks.some((block) => block.type === "h1" && (block.content || "").trim().length > 0),
     [blocks]
   );
+
+  useEffect(() => {
+    if (!selectedTemplate || postId || templateApplied) {
+      return;
+    }
+
+    const templateBlocks = buildBlocksFromTemplate(selectedTemplate);
+    const baseTitle = selectedTemplate.name || "Untitled post";
+    setTitle(baseTitle);
+    setSlug(slugify(baseTitle));
+    setBlocks(templateBlocks);
+    setTemplateApplied(true);
+    toast(`Template loaded: ${selectedTemplate.name}`);
+  }, [selectedTemplate, postId, templateApplied, toast]);
 
   const updateBlock = (id, patch) => {
     setBlocks((prev) => prev.map((block) => (block.id === id ? { ...block, ...patch } : block)));
@@ -295,6 +347,10 @@ export default function EditorScreen({
           setReadTime={setReadTime}
           toast={toast}
           onDelete={removePost}
+          previewTitle={title}
+          previewBlocks={blocks}
+          previewStatus={status}
+          previewReadTime={readTime}
         />
       )}
     </div>

@@ -1,4 +1,5 @@
 import { Btn } from "../ui";
+import BlockPreviewRenderer from "./BlockPreviewRenderer";
 
 export default function PostSettingsPanel({
   slug,
@@ -11,6 +12,10 @@ export default function PostSettingsPanel({
   setReadTime,
   toast,
   onDelete,
+  previewTitle,
+  previewBlocks = [],
+  previewStatus,
+  previewReadTime,
 }) {
   return (
     <div
@@ -95,6 +100,32 @@ export default function PostSettingsPanel({
             >
               Delete Post
             </Btn>
+          </div>
+        </div>
+
+        <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              color: "var(--text3)",
+              marginBottom: 8,
+            }}
+          >
+            LIVE PREVIEW
+          </div>
+          <div style={{ border: "1px solid var(--border)", borderRadius: 10, background: "var(--bg)", padding: 12, maxHeight: 300, overflowY: "auto" }}>
+            <h4 style={{ fontFamily: "var(--font-display)", fontSize: 16, color: "var(--text)", marginBottom: 6, lineHeight: 1.2 }}>
+              {previewTitle || "Untitled post"}
+            </h4>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text3)", marginBottom: 10 }}>
+              {previewStatus} · {previewReadTime}
+            </div>
+            {(previewBlocks || []).slice(0, 4).map((block) => (
+              <div key={block.id}>
+                <BlockPreviewRenderer block={block} />
+              </div>
+            ))}
           </div>
         </div>
       </div>

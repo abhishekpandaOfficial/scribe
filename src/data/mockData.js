@@ -115,7 +115,7 @@ export const MOCK_USER = {
   name: "Abhishek Panda",
   username: "abhishekpanda",
   plan: "Pro",
-  email: "abhishek@abhishekpanda.com",
+  email: "hello@abhishekpanda.com",
   avatar: "AP",
   bio: "Senior .NET Engineer · Writing about performance, architecture, and real-world C#. 22K readers.",
   website: "https://abhishekpanda.com",
