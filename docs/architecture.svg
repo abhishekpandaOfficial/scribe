@@ -1,0 +1,65 @@
+<svg width="1200" height="640" viewBox="0 0 1200 640" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Scribe architecture diagram">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="640" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#09101D"/>
+      <stop offset="1" stop-color="#0D1D33"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="300" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#12243D"/>
+      <stop offset="1" stop-color="#0F1D31"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#00CCF8"/>
+      <stop offset="1" stop-color="#5AABFF"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="640" rx="24" fill="url(#bg)"/>
+
+  <text x="48" y="58" fill="#E7F4FF" font-family="Inter,Arial,sans-serif" font-size="28" font-weight="700">Scribe High-Level Architecture</text>
+  <text x="48" y="88" fill="#8EB0D5" font-family="Inter,Arial,sans-serif" font-size="14">Frontend + API + Storage + Integrations</text>
+
+  <rect x="60" y="140" width="290" height="180" rx="16" fill="url(#card)" stroke="#2B4468"/>
+  <text x="82" y="178" fill="#DDF1FF" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="700">Client App</text>
+  <text x="82" y="205" fill="#8EB0D5" font-family="Inter,Arial,sans-serif" font-size="13">React + Vite</text>
+  <text x="82" y="232" fill="#BFE4FF" font-family="Inter,Arial,sans-serif" font-size="13">Landing, Auth, Dashboard</text>
+  <text x="82" y="254" fill="#BFE4FF" font-family="Inter,Arial,sans-serif" font-size="13">Editor, Templates, Settings</text>
+  <text x="82" y="276" fill="#BFE4FF" font-family="Inter,Arial,sans-serif" font-size="13">Blog, Analytics, API Docs</text>
+
+  <rect x="455" y="140" width="290" height="180" rx="16" fill="url(#card)" stroke="#2B4468"/>
+  <text x="477" y="178" fill="#DDF1FF" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="700">API Layer</text>
+  <text x="477" y="205" fill="#8EB0D5" font-family="Inter,Arial,sans-serif" font-size="13">Express + JWT + Zod</text>
+  <text x="477" y="232" fill="#BFE4FF" font-family="Inter,Arial,sans-serif" font-size="13">/api/auth, /api/posts</text>
+  <text x="477" y="254" fill="#BFE4FF" font-family="Inter,Arial,sans-serif" font-size="13">/api/webhooks, /api/analytics</text>
+  <text x="477" y="276" fill="#BFE4FF" font-family="Inter,Arial,sans-serif" font-size="13">/v1/posts (API key access)</text>
+
+  <rect x="850" y="140" width="290" height="180" rx="16" fill="url(#card)" stroke="#2B4468"/>
+  <text x="872" y="178" fill="#DDF1FF" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="700">Data + Cache</text>
+  <text x="872" y="205" fill="#8EB0D5" font-family="Inter,Arial,sans-serif" font-size="13">SQLite (default)</text>
+  <text x="872" y="227" fill="#8EB0D5" font-family="Inter,Arial,sans-serif" font-size="13">Supabase (runtime/migration)</text>
+  <text x="872" y="254" fill="#BFE4FF" font-family="Inter,Arial,sans-serif" font-size="13">Upstash Redis cache</text>
+  <text x="872" y="276" fill="#BFE4FF" font-family="Inter,Arial,sans-serif" font-size="13">Memory fallback cache</text>
+
+  <rect x="260" y="390" width="290" height="180" rx="16" fill="url(#card)" stroke="#2B4468"/>
+  <text x="282" y="428" fill="#DDF1FF" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="700">Automations</text>
+  <text x="282" y="455" fill="#8EB0D5" font-family="Inter,Arial,sans-serif" font-size="13">Webhook events</text>
+  <text x="282" y="477" fill="#BFE4FF" font-family="Inter,Arial,sans-serif" font-size="13">post.created / updated / published</text>
+  <text x="282" y="499" fill="#BFE4FF" font-family="Inter,Arial,sans-serif" font-size="13">post.deleted / webhook.test</text>
+
+  <rect x="650" y="390" width="290" height="180" rx="16" fill="url(#card)" stroke="#2B4468"/>
+  <text x="672" y="428" fill="#DDF1FF" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="700">External Consumers</text>
+  <text x="672" y="455" fill="#8EB0D5" font-family="Inter,Arial,sans-serif" font-size="13">Next.js / Astro / custom clients</text>
+  <text x="672" y="477" fill="#BFE4FF" font-family="Inter,Arial,sans-serif" font-size="13">Public endpoints + API keys</text>
+  <text x="672" y="499" fill="#BFE4FF" font-family="Inter,Arial,sans-serif" font-size="13">Webhook-driven sync flows</text>
+
+  <path d="M350 230H455" stroke="url(#accent)" stroke-width="4" stroke-linecap="round"/>
+  <path d="M745 230H850" stroke="url(#accent)" stroke-width="4" stroke-linecap="round"/>
+  <path d="M550 320L620 390" stroke="url(#accent)" stroke-width="4" stroke-linecap="round"/>
+  <path d="M650 320L580 390" stroke="url(#accent)" stroke-width="4" stroke-linecap="round"/>
+  <path d="M745 475H650" stroke="url(#accent)" stroke-width="4" stroke-linecap="round"/>
+  <path d="M550 475H650" stroke="url(#accent)" stroke-width="4" stroke-linecap="round"/>
+
+  <circle cx="455" cy="230" r="6" fill="#9AEAFF"/>
+  <circle cx="850" cy="230" r="6" fill="#9AEAFF"/>
+  <circle cx="650" cy="390" r="6" fill="#9AEAFF"/>
+</svg>
