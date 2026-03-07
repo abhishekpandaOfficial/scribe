@@ -18,6 +18,7 @@ import AnalyticsScreen from "./screens/AnalyticsScreen";
 import BlogScreen from "./screens/BlogScreen";
 import PostScreen from "./screens/PostScreen";
 import ApiDocsScreen from "./screens/ApiDocsScreen";
+import ScribeErrorScreen from "./screens/ScribeErrorScreen";
 import GlobalStyle from "./styles/GlobalStyle";
 
 function formatRelative(iso) {
@@ -369,7 +370,7 @@ export default function App() {
               }
             />
             <Route path="/apidocs" element={token ? <ApiDocsScreen /> : <Navigate to="/login" replace />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<ScribeErrorScreen setScreen={setScreen} />} />
           </Routes>
         </div>
       </div>
