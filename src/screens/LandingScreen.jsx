@@ -1,7 +1,111 @@
+import { useMemo, useState } from "react";
 import { Btn } from "../components/ui";
 import logoIcon from "../assets/scribe-logo-icon.svg";
 
 export default function LandingScreen({ setScreen }) {
+  const [currency, setCurrency] = useState("USD");
+  const [billing, setBilling] = useState("monthly");
+  const usdToInr = 83;
+  const omniNetworks = [
+    {
+      name: "Dev.to",
+      logo: (
+        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="2.5" y="2.5" width="19" height="19" rx="4" fill="currentColor" />
+          <path d="M7 8.4h2.3c2 0 3.1 1 3.1 3.1v1c0 2.1-1.1 3.1-3.1 3.1H7V8.4zm2.2 5.4c.7 0 1.1-.3 1.1-1.2v-1.2c0-.8-.4-1.2-1.1-1.2h-.4v3.6h.4zm7.2-3.6H14v-1.8h5v1.8h-1.4v5.4h-2.2v-5.4z" fill="#fff" />
+        </svg>
+      ),
+    },
+    {
+      name: "Hashnode",
+      logo: (
+        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M7.8 2.8h8.4l5 5v8.4l-5 5H7.8l-5-5V7.8l5-5z" fill="#2962FF" />
+        </svg>
+      ),
+    },
+    {
+      name: "Medium",
+      logo: (
+        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="8" cy="12" r="5.4" fill="currentColor" />
+          <ellipse cx="16.2" cy="12" rx="3.1" ry="5.1" fill="currentColor" opacity=".8" />
+          <ellipse cx="20.7" cy="12" rx="1.3" ry="4.4" fill="currentColor" opacity=".6" />
+        </svg>
+      ),
+    },
+    {
+      name: "Substack",
+      logo: (
+        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="4" y="3.5" width="16" height="2.2" fill="#FF6719" />
+          <rect x="4" y="7.7" width="16" height="2.2" fill="#FF6719" />
+          <rect x="4" y="11.9" width="16" height="8.6" fill="#FF6719" />
+        </svg>
+      ),
+    },
+    {
+      name: "LinkedIn",
+      logo: (
+        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="2" y="2" width="20" height="20" rx="3.2" fill="#0A66C2" />
+          <rect x="6" y="10" width="2.4" height="8" fill="#fff" />
+          <circle cx="7.2" cy="7.4" r="1.4" fill="#fff" />
+          <path d="M11 10h2.3v1.1h.1c.4-.7 1.3-1.3 2.6-1.3 2.3 0 3 1.5 3 3.6V18H16v-3.9c0-.9-.3-1.6-1.2-1.6s-1.4.7-1.4 1.6V18H11v-8z" fill="#fff" />
+        </svg>
+      ),
+    },
+    {
+      name: "X",
+      logo: (
+        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 4h4.4l3.6 5.1L16.7 4H20l-6.2 7.1L20.5 20h-4.4l-3.9-5.5L7.2 20H4l6.5-7.4L4 4z" fill="currentColor" />
+        </svg>
+      ),
+    },
+    {
+      name: "YouTube",
+      logo: (
+        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="2.5" y="6.2" width="19" height="11.6" rx="3.4" fill="#FF0000" />
+          <path d="M10 9.5 15.2 12 10 14.5v-5z" fill="#fff" />
+        </svg>
+      ),
+    },
+    {
+      name: "WordPress",
+      logo: (
+        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M7.3 8.8c.4 0 .8-.1 1.1-.2l3.1 8 2.2-6.4c.2-.5.2-.9.2-1.2 0-.5-.2-.9-.4-1.2 1.6.6 2.8 2.2 2.8 4 0 2.6-2.1 4.7-4.7 4.7S7.3 14.4 7.3 11.8c0-1.1.4-2.1 1.1-3z" fill="currentColor" />
+        </svg>
+      ),
+    },
+    {
+      name: "Ghost",
+      logo: (
+        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="3.5" width="18" height="17" rx="4" fill="#15171A" />
+          <circle cx="9.2" cy="11" r="1.2" fill="#fff" />
+          <circle cx="14.8" cy="11" r="1.2" fill="#fff" />
+          <path d="M7 16c1.2-1.1 2.5-1.6 5-1.6s3.8.5 5 1.6" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+      ),
+    },
+    {
+      name: "Reddit",
+      logo: (
+        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="13" r="6.3" fill="#FF4500" />
+          <circle cx="9.5" cy="12.5" r="1" fill="#fff" />
+          <circle cx="14.5" cy="12.5" r="1" fill="#fff" />
+          <path d="M9.4 15.1c.8.6 1.7.9 2.6.9s1.8-.3 2.6-.9" stroke="#fff" strokeWidth="1.2" strokeLinecap="round" />
+          <circle cx="18.6" cy="8.2" r="1.3" fill="#FF4500" />
+          <path d="M14.7 9.1 16.9 8" stroke="#FF4500" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      ),
+    },
+  ];
   const features = [
     {
       icon: "🧱",
@@ -64,53 +168,80 @@ export default function LandingScreen({ setScreen }) {
 
   const plans = [
     {
-      name: "Free",
-      price: "$0",
+      name: "Starter API",
+      monthlyUsd: 0,
+      yearlyUsd: 0,
       color: "var(--border2)",
       features: [
-        "1 workspace",
-        "5 published posts",
-        "scribe.dev subdomain",
-        "REST API access",
-        "3 API keys",
+        "Cloud API sandbox",
+        "10,000 API calls/month",
+        "2 API keys",
+        "Basic webhooks",
+        "Email support",
       ],
     },
     {
-      name: "Pro",
-      price: "$12",
+      name: "Pro API Cloud",
+      monthlyUsd: 29,
+      yearlyUsd: 290,
       color: "var(--accent)",
       popular: true,
       features: [
-        "Unlimited posts",
-        "Custom domain",
-        "Unlimited webhooks",
-        "Analytics dashboard",
-        "Remove Scribe branding",
+        "300,000 API calls/month",
         "20 API keys",
+        "Advanced webhooks",
+        "Priority queue processing",
+        "Usage analytics",
         "Priority support",
       ],
     },
     {
-      name: "Team",
-      price: "$39",
+      name: "Scale API Cloud",
+      monthlyUsd: 99,
+      yearlyUsd: 990,
       color: "var(--orange)",
       features: [
-        "Everything in Pro",
-        "5 team members",
-        "Shared workspace",
-        "GitHub login",
-        "Dedicated API rate limits",
-        "SLA guarantee",
+        "2,000,000 API calls/month",
+        "Unlimited API keys",
+        "Dedicated rate limits",
+        "SLA & uptime guarantee",
+        "Team access controls",
+        "Dedicated onboarding",
       ],
     },
   ];
+
+  const pricedPlans = useMemo(
+    () =>
+      plans.map((plan) => {
+        const amountUsd = billing === "monthly" ? plan.monthlyUsd : plan.yearlyUsd;
+        const amount = currency === "USD" ? amountUsd : Math.round(amountUsd * usdToInr);
+        return {
+          ...plan,
+          priceLabel: `${currency === "USD" ? "$" : "₹"}${amount.toLocaleString("en-IN")}`,
+        };
+      }),
+    [billing, currency]
+  );
+
+  const localPlan = {
+    name: "Self-hosted Local",
+    priceLabel: "Free",
+    features: [
+      "Run fully on localhost",
+      "No cloud subscription required",
+      "Use local DB + local storage",
+      "Local webhook testing support",
+      "Docs-based setup guidance",
+    ],
+  };
 
   const handleNavClick = (item) => {
     if (item === "Docs") {
       setScreen("apidocs");
       return;
     }
-    if (item === "Blog") {
+    if (item === "Community") {
       setScreen("blog");
       return;
     }
@@ -120,6 +251,14 @@ export default function LandingScreen({ setScreen }) {
     if (section) {
       section.scrollIntoView({ behavior: "smooth", block: "start" });
     }
+  };
+
+  const handleFooterClick = (link) => {
+    if (link === "GitHub") {
+      window.open("https://github.com", "_blank", "noopener,noreferrer");
+      return;
+    }
+    handleNavClick(link === "Product" ? "Features" : link);
   };
 
   return (
@@ -133,7 +272,7 @@ export default function LandingScreen({ setScreen }) {
         </div>
 
         <div className="landing-nav-links">
-          {["Features", "Pricing", "Docs", "Blog"].map((item) => (
+          {["Features", "Pricing", "Docs", "Community"].map((item) => (
             <button
               key={item}
               style={{ background: "none", color: "var(--text2)", fontSize: 13, fontFamily: "var(--font-body)", padding: "4px 0", border: "none" }}
@@ -151,6 +290,7 @@ export default function LandingScreen({ setScreen }) {
         </div>
 
         <div className="landing-nav-actions">
+          <Btn variant="outline" size="sm" onClick={() => setScreen("signup")}>Become a writer</Btn>
           <Btn variant="ghost" size="sm" onClick={() => setScreen("login")}>Log in</Btn>
           <Btn variant="primary" size="sm" onClick={() => setScreen("signup")}>Start free →</Btn>
         </div>
@@ -257,10 +397,11 @@ export default function LandingScreen({ setScreen }) {
 
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
                 <Btn variant="primary" size="lg" onClick={() => setScreen("signup")}>Start writing free →</Btn>
+                <Btn variant="outline" size="lg" onClick={() => setScreen("signup")}>Become a writer & earn</Btn>
                 <Btn variant="ghost" size="lg" onClick={() => setScreen("login")}>Open live workspace</Btn>
               </div>
               <p style={{ fontSize: 12, color: "var(--text3)", fontFamily: "var(--font-mono)" }}>
-                No credit card · Free plan forever · Deploy-ready API
+                Omniflow autoposting · Multi-network distribution · Free plan forever
               </p>
 
               <div className="landing-stat-grid">
@@ -400,6 +541,31 @@ export default function LandingScreen({ setScreen }) {
               </div>
             ))}
           </div>
+
+          <div style={{ marginTop: 26, background: "var(--hero-surface-soft)", border: "1px solid var(--border2)", borderRadius: 14, padding: "14px 16px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 10, flexWrap: "wrap" }}>
+              <div>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--text)", fontWeight: 700, letterSpacing: "-0.4px" }}>
+                  Become a writer. Earn by distributing everywhere.
+                </div>
+                <div style={{ color: "var(--text2)", fontSize: 13, lineHeight: 1.6 }}>
+                  Omniflow auto-posts your technical content to supported blogging networks and social platforms from one publishing action.
+                </div>
+              </div>
+              <Btn variant="primary" size="sm" onClick={() => setScreen("signup")}>Join Writers Program</Btn>
+            </div>
+
+            <div className="omni-marquee">
+              <div className="omni-track">
+                {[...omniNetworks, ...omniNetworks].map((network, index) => (
+                  <div key={`${network.name}-${index}`} className="omni-pill">
+                    <span style={{ width: 16, height: 16, display: "inline-flex", alignItems: "center", justifyContent: "center", color: "var(--text)" }}>{network.logo}</span>
+                    <span>{network.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -477,14 +643,58 @@ return data.filter(post => post.status === 'published');`}</pre>
       <section id="landing-pricing" style={{ padding: "84px 0 76px", background: "var(--bg)", scrollMarginTop: 86 }}>
         <div className="landing-main">
           <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "clamp(30px,5vw,38px)", color: "var(--text)", letterSpacing: "-1px", textAlign: "center", marginBottom: 12 }}>
-            Transparent pricing for growth
+            API cloud pricing with local freedom
           </h2>
           <p style={{ textAlign: "center", color: "var(--text2)", marginBottom: 50, fontSize: 15 }}>
-            Start free. Upgrade when distribution and analytics matter.
+            Pay only for cloud API usage. Local self-hosting stays free forever.
           </p>
 
+          <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap", marginBottom: 26 }}>
+            <div style={{ display: "inline-flex", padding: 4, borderRadius: 999, border: "1px solid var(--border2)", background: "var(--bg3)" }}>
+              {["USD", "INR"].map((item) => (
+                <button
+                  key={item}
+                  onClick={() => setCurrency(item)}
+                  style={{
+                    border: "none",
+                    padding: "6px 14px",
+                    borderRadius: 999,
+                    fontSize: 12,
+                    fontFamily: "var(--font-mono)",
+                    background: currency === item ? "var(--bg5)" : "transparent",
+                    color: currency === item ? "var(--text)" : "var(--text3)",
+                  }}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: "inline-flex", padding: 4, borderRadius: 999, border: "1px solid var(--border2)", background: "var(--bg3)" }}>
+              {[
+                { key: "monthly", label: "Monthly API" },
+                { key: "yearly", label: "Yearly API" },
+              ].map((item) => (
+                <button
+                  key={item.key}
+                  onClick={() => setBilling(item.key)}
+                  style={{
+                    border: "none",
+                    padding: "6px 14px",
+                    borderRadius: 999,
+                    fontSize: 12,
+                    fontFamily: "var(--font-mono)",
+                    background: billing === item.key ? "var(--bg5)" : "transparent",
+                    color: billing === item.key ? "var(--text)" : "var(--text3)",
+                  }}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div style={{ maxWidth: 1040, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1.1fr 1fr", gap: 20 }}>
-            {plans.map((plan, i) => (
+            {pricedPlans.map((plan, i) => (
               <div
                 key={i}
                 style={{
@@ -509,8 +719,8 @@ return data.filter(post => post.status === 'published');`}</pre>
                 )}
                 <h3 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 18, color: plan.color, marginBottom: 8 }}>{plan.name}</h3>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 20 }}>
-                  <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 36, color: "var(--text)" }}>{plan.price}</span>
-                  <span style={{ color: "var(--text3)", fontSize: 13 }}>/month</span>
+                  <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 36, color: "var(--text)" }}>{plan.priceLabel}</span>
+                  <span style={{ color: "var(--text3)", fontSize: 13 }}>{billing === "monthly" ? "/month" : "/year"}</span>
                 </div>
                 <ul style={{ listStyle: "none", marginBottom: 24, display: "flex", flexDirection: "column", gap: 8 }}>
                   {plan.features.map((feature, j) => (
@@ -520,11 +730,33 @@ return data.filter(post => post.status === 'published');`}</pre>
                     </li>
                   ))}
                 </ul>
-                <Btn variant={plan.popular ? "primary" : plan.name === "Team" ? "outline" : "ghost"} style={{ width: "100%", justifyContent: "center" }} onClick={() => setScreen("signup")}>
-                  {plan.name === "Free" ? "Start free →" : "Get started →"}
+                <Btn variant={plan.popular ? "primary" : plan.name.includes("Scale") ? "outline" : "ghost"} style={{ width: "100%", justifyContent: "center" }} onClick={() => setScreen("signup")}>
+                  {plan.monthlyUsd === 0 ? "Start free →" : "Get API access →"}
                 </Btn>
               </div>
             ))}
+          </div>
+
+          <div style={{ maxWidth: 1040, margin: "18px auto 0", background: "var(--bg3)", border: "1px solid var(--border2)", borderRadius: 14, padding: 18 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
+              <div>
+                <h3 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 18, color: "var(--text)", marginBottom: 6 }}>
+                  {localPlan.name}
+                </h3>
+                <p style={{ color: "var(--text2)", fontSize: 13, lineHeight: 1.6 }}>
+                  Build and run Scribe on your machine with no cloud billing.
+                </p>
+              </div>
+              <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 28, color: "var(--green)" }}>{localPlan.priceLabel}</span>
+            </div>
+            <ul style={{ listStyle: "none", marginTop: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 8 }}>
+              {localPlan.features.map((feature) => (
+                <li key={feature} style={{ color: "var(--text2)", fontSize: 13 }}>
+                  <span style={{ color: "var(--green)", marginRight: 7 }}>✓</span>
+                  {feature}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </section>
@@ -536,13 +768,19 @@ return data.filter(post => post.status === 'published');`}</pre>
             <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 15, color: "var(--text)" }}>SCRIBE</span>
           </div>
           <div style={{ display: "flex", gap: 24 }}>
-            {["Product", "Docs", "Pricing", "Blog", "GitHub"].map((link) => (
-              <button key={link} style={{ background: "none", color: "var(--text3)", fontSize: 12, fontFamily: "var(--font-body)", border: "none" }} onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text2)"; }} onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text3)"; }}>
+            {["Product", "Docs", "Pricing", "Community", "GitHub"].map((link) => (
+              <button
+                key={link}
+                style={{ background: "none", color: "var(--text3)", fontSize: 12, fontFamily: "var(--font-body)", border: "none", cursor: "pointer" }}
+                onClick={() => handleFooterClick(link)}
+                onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text2)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text3)"; }}
+              >
                 {link}
               </button>
             ))}
           </div>
-          <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text3)" }}>© 2026 Scribe · Built by Abhishek Panda · MIT License</p>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text3)" }}>© 2026 Scribe · MIT License</p>
         </div>
       </footer>
     </div>

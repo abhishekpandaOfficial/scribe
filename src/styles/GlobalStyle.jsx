@@ -103,6 +103,10 @@ export default function GlobalStyle() {
         0% { background-position:0 0; }
         100% { background-position:160px 0; }
       }
+      @keyframes omniScroll {
+        0% { transform:translateX(0); }
+        100% { transform:translateX(-50%); }
+      }
       .fadeIn { animation:fadeIn .3s ease forwards; }
       .slideDown { animation:slideDown .2s ease forwards; }
       .landing-main {
@@ -224,6 +228,38 @@ export default function GlobalStyle() {
         grid-template-columns:repeat(3,minmax(0,1fr));
         gap:20px;
       }
+      .omni-marquee {
+        position:relative;
+        overflow:hidden;
+        border:1px solid var(--border);
+        border-radius:10px;
+        background:var(--bg2);
+        padding:10px 0;
+      }
+      .omni-track {
+        display:flex;
+        align-items:center;
+        gap:10px;
+        width:max-content;
+        min-width:200%;
+        animation:omniScroll 26s linear infinite;
+      }
+      .omni-marquee:hover .omni-track {
+        animation-play-state:paused;
+      }
+      .omni-pill {
+        display:inline-flex;
+        align-items:center;
+        gap:7px;
+        padding:6px 10px;
+        border-radius:999px;
+        border:1px solid var(--border2);
+        background:var(--bg3);
+        color:var(--text2);
+        font-size:11px;
+        font-family:var(--font-mono);
+        white-space:nowrap;
+      }
       @media (max-width:1100px) {
         .landing-nav {
           padding:0 24px;
@@ -261,6 +297,10 @@ export default function GlobalStyle() {
         }
         .hero-card-grid {
           grid-template-columns:1fr;
+        }
+        .omni-pill {
+          font-size:10px;
+          padding:5px 9px;
         }
       }
       @media (max-width:760px) {

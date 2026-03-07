@@ -2,10 +2,13 @@ import { useState } from "react";
 import { Badge, Btn } from "../components/ui";
 import logoIcon from "../assets/scribe-logo-icon.svg";
 export default function ApiDocsScreen() {
-  const [activeSection, setActiveSection] = useState("authentication");
+  const [activeSection, setActiveSection] = useState("getting-started");
   const [codeLang, setCodeLang] = useState("curl");
   const [expanded, setExpanded] = useState({});
   const sections = [
+    { key:"getting-started", label:"Getting Started" },
+    { key:"local-setup", label:"Local Setup" },
+    { key:"webhook-guide", label:"Webhook Guide" },
     { key:"authentication", label:"Authentication" }, { key:"posts", label:"Posts" },
     { key:"series", label:"Series" }, { key:"media", label:"Media" },
     { key:"analytics", label:"Analytics" }, { key:"webhooks", label:"Webhooks" },
@@ -52,6 +55,95 @@ export default function ApiDocsScreen() {
         {sections.map(s=>(<button key={s.key} onClick={()=>setActiveSection(s.key)} style={{ display:"block", width:"100%", padding:"8px 10px", borderRadius:7, background:activeSection===s.key?"var(--bg5)":"transparent", color:activeSection===s.key?"var(--text)":"var(--text2)", fontSize:13, fontFamily:"var(--font-body)", textAlign:"left", border:activeSection===s.key?"1px solid var(--border3)":"1px solid transparent", marginBottom:2, transition:"all .13s" }}>{s.label}</button>))}
       </div>
       <div style={{ flex:1, overflowY:"auto", padding:"32px 36px" }}>
+        {activeSection==="getting-started" && (
+          <div style={{ maxWidth:760 }}>
+            <h1 style={{ fontFamily:"var(--font-display)", fontWeight:800, fontSize:28, color:"var(--text)", marginBottom:8, letterSpacing:"-0.5px" }}>Getting Started</h1>
+            <p style={{ color:"var(--text2)", fontSize:15, lineHeight:1.7, marginBottom:20 }}>
+              Scribe has two modes: <strong style={{ color:"var(--text)" }}>API Cloud</strong> for managed scale and <strong style={{ color:"var(--text)" }}>Self-hosted Local</strong> for free local usage.
+            </p>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:20 }}>
+              <div style={{ background:"var(--bg2)", border:"1px solid var(--border)", borderRadius:10, padding:14 }}>
+                <div style={{ fontFamily:"var(--font-display)", fontWeight:700, color:"var(--text)", marginBottom:6 }}>API Cloud</div>
+                <ul style={{ margin:0, paddingLeft:16, color:"var(--text2)", fontSize:13, lineHeight:1.7 }}>
+                  <li>Managed endpoint: <code style={{ fontFamily:"var(--font-mono)" }}>https://api.scribe.dev</code></li>
+                  <li>Usage billing by monthly/yearly API plans</li>
+                  <li>Built-in rate limits, analytics, and SLA tiers</li>
+                </ul>
+              </div>
+              <div style={{ background:"var(--bg2)", border:"1px solid var(--border)", borderRadius:10, padding:14 }}>
+                <div style={{ fontFamily:"var(--font-display)", fontWeight:700, color:"var(--text)", marginBottom:6 }}>Self-hosted Local</div>
+                <ul style={{ margin:0, paddingLeft:16, color:"var(--text2)", fontSize:13, lineHeight:1.7 }}>
+                  <li>Run on localhost with no cloud subscription</li>
+                  <li>Ideal for development and testing</li>
+                  <li>Can still test webhooks using tunneling</li>
+                </ul>
+              </div>
+            </div>
+            <div style={{ background:"var(--bg2)", border:"1px solid var(--border)", borderRadius:10, padding:16 }}>
+              <div style={{ fontSize:11, color:"var(--text3)", fontFamily:"var(--font-mono)", marginBottom:8 }}>QUICK START FLOW</div>
+              <ol style={{ margin:0, paddingLeft:18, color:"var(--text2)", fontSize:14, lineHeight:1.75 }}>
+                <li>Create workspace and API key from Settings.</li>
+                <li>Publish a post from dashboard/editor.</li>
+                <li>Fetch with <code style={{ fontFamily:"var(--font-mono)" }}>GET /v1/posts</code> using <code style={{ fontFamily:"var(--font-mono)" }}>x-api-key</code>.</li>
+                <li>Configure webhook endpoint for publish events.</li>
+              </ol>
+            </div>
+          </div>
+        )}
+        {activeSection==="local-setup" && (
+          <div style={{ maxWidth:760 }}>
+            <h1 style={{ fontFamily:"var(--font-display)", fontWeight:800, fontSize:28, color:"var(--text)", marginBottom:8, letterSpacing:"-0.5px" }}>Local Setup</h1>
+            <p style={{ color:"var(--text2)", fontSize:15, lineHeight:1.7, marginBottom:18 }}>
+              Run Scribe locally to develop content workflows without cloud billing.
+            </p>
+            <div style={{ background:"var(--bg2)", border:"1px solid var(--border)", borderRadius:12, overflow:"hidden", marginBottom:16 }}>
+              <div style={{ background:"var(--bg3)", borderBottom:"1px solid var(--border)", padding:"9px 12px", fontSize:11, color:"var(--text3)", fontFamily:"var(--font-mono)" }}>Terminal</div>
+              <pre style={{ margin:0, padding:16, fontFamily:"var(--font-mono)", fontSize:12, color:"var(--text2)", lineHeight:1.75, overflowX:"auto" }}>{`git clone <your-repo-url>
+cd scribe
+npm install
+npm run dev`}</pre>
+            </div>
+            <div style={{ background:"var(--bg2)", border:"1px solid var(--border)", borderRadius:12, overflow:"hidden", marginBottom:18 }}>
+              <div style={{ background:"var(--bg3)", borderBottom:"1px solid var(--border)", padding:"9px 12px", fontSize:11, color:"var(--text3)", fontFamily:"var(--font-mono)" }}>.env.local</div>
+              <pre style={{ margin:0, padding:16, fontFamily:"var(--font-mono)", fontSize:12, color:"var(--text2)", lineHeight:1.75, overflowX:"auto" }}>{`VITE_SUPABASE_URL=your_project_url
+VITE_SUPABASE_ANON_KEY=your_anon_key
+VITE_SCRIBE_API_BASE=http://localhost:5173/api`}</pre>
+            </div>
+            <div style={{ background:"rgba(0,204,248,.04)", border:"1px solid rgba(0,204,248,.2)", borderRadius:10, padding:"12px 16px", display:"flex", gap:10 }}>
+              <span>💡</span>
+              <div style={{ fontSize:13, color:"var(--text2)", lineHeight:1.6 }}>
+                Use local mode for development. Move to API Cloud only when you need production rate limits and managed scaling.
+              </div>
+            </div>
+          </div>
+        )}
+        {activeSection==="webhook-guide" && (
+          <div style={{ maxWidth:760 }}>
+            <h1 style={{ fontFamily:"var(--font-display)", fontWeight:800, fontSize:28, color:"var(--text)", marginBottom:8, letterSpacing:"-0.5px" }}>Webhook Guide</h1>
+            <p style={{ color:"var(--text2)", fontSize:15, lineHeight:1.7, marginBottom:18 }}>
+              Trigger automations when content is published, updated, or archived.
+            </p>
+            <div style={{ background:"var(--bg2)", border:"1px solid var(--border)", borderRadius:12, padding:16, marginBottom:12 }}>
+              <div style={{ fontSize:11, color:"var(--text3)", fontFamily:"var(--font-mono)", marginBottom:8 }}>SETUP STEPS</div>
+              <ol style={{ margin:0, paddingLeft:18, color:"var(--text2)", fontSize:14, lineHeight:1.75 }}>
+                <li>Create endpoint in your service: <code style={{ fontFamily:"var(--font-mono)" }}>POST /webhooks/scribe</code>.</li>
+                <li>Register webhook URL in Scribe settings.</li>
+                <li>Store and verify the webhook signature secret.</li>
+                <li>Send test payload from Docs → Webhooks endpoint.</li>
+              </ol>
+            </div>
+            <div style={{ background:"var(--bg2)", border:"1px solid var(--border)", borderRadius:12, overflow:"hidden" }}>
+              <div style={{ background:"var(--bg3)", borderBottom:"1px solid var(--border)", padding:"9px 12px", fontSize:11, color:"var(--text3)", fontFamily:"var(--font-mono)" }}>Node.js handler example</div>
+              <pre style={{ margin:0, padding:16, fontFamily:"var(--font-mono)", fontSize:12, color:"var(--text2)", lineHeight:1.75, overflowX:"auto" }}>{`app.post('/webhooks/scribe', express.json(), (req, res) => {
+  const event = req.body?.event;
+  if (event === 'post.published') {
+    // trigger deploy, cache purge, or social distribution
+  }
+  return res.status(200).json({ ok: true });
+});`}</pre>
+            </div>
+          </div>
+        )}
         {activeSection==="authentication" && (
           <div style={{ maxWidth:760 }}>
             <h1 style={{ fontFamily:"var(--font-display)", fontWeight:800, fontSize:28, color:"var(--text)", marginBottom:8, letterSpacing:"-0.5px" }}>Authentication</h1>

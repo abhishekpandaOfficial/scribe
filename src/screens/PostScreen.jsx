@@ -127,7 +127,7 @@ export default function PostScreen({ post, posts = [], token, setScreen, user })
           <p style={{ color: "var(--text2)", marginBottom: 18, lineHeight: 1.7 }}>
             This post may not be published yet or the URL is outdated.
           </p>
-          <Btn variant="primary" onClick={() => setScreen("blog")}>Back to blog</Btn>
+          <Btn variant="primary" onClick={() => setScreen("blog")}>Back to writers</Btn>
         </div>
       </div>
     );

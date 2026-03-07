@@ -11,7 +11,7 @@ export default function Sidebar({ screen, setScreen, user, onLogout }) {
     { key: "templates", icon: "📋", label: "Templates" },
     { key: "settings", icon: "🔌", label: "API & Webhooks" },
     { key: "analytics", icon: "📊", label: "Analytics" },
-    { key: "blog", icon: "🌐", label: "My Blog" },
+    { key: "blog", icon: "🌐", label: "Public Page" },
     { key: "settings", icon: "⚙️", label: "Settings" },
     { key: "apidocs", icon: "📚", label: "API Docs" },
   ];
