@@ -125,11 +125,14 @@ export default function GlobalStyle() {
         align-items:center;
         gap:28px;
         padding:0 48px;
+        position:fixed;
       }
       .landing-nav-links {
         display:flex;
         gap:22px;
-        margin-left:10px;
+        position:absolute;
+        left:54%;
+        transform:translateX(-50%);
       }
       .landing-nav-actions {
         margin-left:auto;
@@ -263,6 +266,8 @@ export default function GlobalStyle() {
       @media (max-width:760px) {
         .landing-nav-links {
           display:none;
+          position:static;
+          transform:none;
         }
         .landing-nav {
           padding:0 14px;

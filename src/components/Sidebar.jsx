@@ -1,4 +1,5 @@
 import { Avatar, Badge } from "./ui";
+import logoIcon from "../assets/scribe-logo-icon.svg";
 
 export default function Sidebar({ screen, setScreen, user, onLogout }) {
   const profile = user || {
@@ -40,23 +41,7 @@ export default function Sidebar({ screen, setScreen, user, onLogout }) {
         }}
         onClick={() => setScreen("dashboard")}
       >
-        <div
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: 8,
-            background: "linear-gradient(135deg,var(--accent),var(--blue))",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 14,
-            fontWeight: 800,
-            color: "#000",
-            fontFamily: "var(--font-display)",
-          }}
-        >
-          S
-        </div>
+        <img src={logoIcon} alt="Scribe" style={{ width: 30, height: 30, borderRadius: 8, display: "block" }} />
         <span
           style={{
             fontFamily: "var(--font-display)",

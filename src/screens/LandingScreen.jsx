@@ -1,4 +1,5 @@
 import { Btn } from "../components/ui";
+import logoIcon from "../assets/scribe-logo-icon.svg";
 
 export default function LandingScreen({ setScreen }) {
   const features = [
@@ -104,27 +105,28 @@ export default function LandingScreen({ setScreen }) {
     },
   ];
 
+  const handleNavClick = (item) => {
+    if (item === "Docs") {
+      setScreen("apidocs");
+      return;
+    }
+    if (item === "Blog") {
+      setScreen("blog");
+      return;
+    }
+
+    const sectionId = item === "Features" ? "landing-features" : "landing-pricing";
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   return (
     <div style={{ background: "var(--bg)", minHeight: "100vh", fontFamily: "var(--font-body)" }}>
       <nav className="landing-nav">
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 7,
-              background: "linear-gradient(135deg,var(--accent),var(--blue))",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 13,
-              fontWeight: 800,
-              color: "#000",
-              fontFamily: "var(--font-display)",
-            }}
-          >
-            S
-          </div>
+          <img src={logoIcon} alt="Scribe" style={{ width: 28, height: 28, borderRadius: 7, display: "block" }} />
           <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 17, color: "var(--text)", letterSpacing: "-0.5px" }}>
             SCRIBE
           </span>
@@ -135,6 +137,7 @@ export default function LandingScreen({ setScreen }) {
             <button
               key={item}
               style={{ background: "none", color: "var(--text2)", fontSize: 13, fontFamily: "var(--font-body)", padding: "4px 0", border: "none" }}
+              onClick={() => handleNavClick(item)}
               onMouseEnter={(e) => {
                 e.currentTarget.style.color = "var(--text)";
               }}
@@ -400,7 +403,7 @@ export default function LandingScreen({ setScreen }) {
         </div>
       </section>
 
-      <section style={{ padding: "86px 0 74px" }}>
+      <section id="landing-features" style={{ padding: "86px 0 74px", scrollMarginTop: 86 }}>
         <div className="landing-main">
           <div style={{ textAlign: "center", marginBottom: 50 }}>
             <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "clamp(30px,5vw,40px)", color: "var(--text)", letterSpacing: "-1px", marginBottom: 12 }}>
@@ -416,8 +419,8 @@ export default function LandingScreen({ setScreen }) {
               <div
                 key={i}
                 style={{
-                  background: "linear-gradient(165deg, rgba(12,16,24,.95) 0%, rgba(17,24,32,.95) 100%)",
-                  border: "1px solid var(--border)",
+                  background: "var(--hero-card-gradient)",
+                  border: "1px solid var(--border2)",
                   borderRadius: 14,
                   padding: 24,
                   transition: "all .18s",
@@ -425,10 +428,10 @@ export default function LandingScreen({ setScreen }) {
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = "var(--border3)";
                   e.currentTarget.style.transform = "translateY(-3px)";
-                  e.currentTarget.style.boxShadow = "0 18px 40px rgba(0,0,0,.35)";
+                  e.currentTarget.style.boxShadow = "var(--hero-shadow-rest)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "var(--border)";
+                  e.currentTarget.style.borderColor = "var(--border2)";
                   e.currentTarget.style.transform = "translateY(0)";
                   e.currentTarget.style.boxShadow = "none";
                 }}
@@ -471,7 +474,7 @@ return data.filter(post => post.status === 'published');`}</pre>
         </div>
       </section>
 
-      <section style={{ padding: "84px 0 76px", background: "var(--bg)" }}>
+      <section id="landing-pricing" style={{ padding: "84px 0 76px", background: "var(--bg)", scrollMarginTop: 86 }}>
         <div className="landing-main">
           <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "clamp(30px,5vw,38px)", color: "var(--text)", letterSpacing: "-1px", textAlign: "center", marginBottom: 12 }}>
             Transparent pricing for growth
@@ -529,7 +532,7 @@ return data.filter(post => post.status === 'published');`}</pre>
       <footer style={{ padding: "38px 0", borderTop: "1px solid var(--border)" }}>
         <div className="landing-main" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 24, height: 24, borderRadius: 6, background: "linear-gradient(135deg,var(--accent),var(--blue))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: "#000", fontFamily: "var(--font-display)" }}>S</div>
+            <img src={logoIcon} alt="Scribe" style={{ width: 24, height: 24, borderRadius: 6, display: "block" }} />
             <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 15, color: "var(--text)" }}>SCRIBE</span>
           </div>
           <div style={{ display: "flex", gap: 24 }}>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Badge, Btn } from "../components/ui";
+import logoIcon from "../assets/scribe-logo-icon.svg";
 export default function ApiDocsScreen() {
   const [activeSection, setActiveSection] = useState("authentication");
   const [codeLang, setCodeLang] = useState("curl");
@@ -44,7 +45,7 @@ export default function ApiDocsScreen() {
     <div style={{ flex:1, display:"flex", overflow:"hidden", background:"var(--bg)" }}>
       <div style={{ width:220, background:"var(--bg2)", borderRight:"1px solid var(--border)", padding:"20px 12px", flexShrink:0, overflowY:"auto" }}>
         <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:20, padding:"0 8px" }}>
-          <div style={{ width:22, height:22, borderRadius:5, background:"linear-gradient(135deg,var(--accent),var(--blue))", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:800, color:"#000", fontFamily:"var(--font-display)" }}>S</div>
+          <img src={logoIcon} alt="Scribe" style={{ width: 22, height: 22, borderRadius: 5, display: "block" }} />
           <span style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize:14, color:"var(--text)" }}>API Reference</span>
         </div>
         <div style={{ fontSize:9, color:"var(--text4)", fontFamily:"var(--font-mono)", letterSpacing:"1px", marginBottom:10, padding:"0 8px" }}>v1 · REST · JSON</div>

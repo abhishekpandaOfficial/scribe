@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import ThemeToggleButton from "./components/ThemeToggleButton";
 import { Toast } from "./components/ui";
 import useToast from "./hooks/useToast";
 import { authApi, postsApi } from "./lib/apiClient";
+import { PROTECTED_SCREENS, FULLSCREEN_SCREENS, getPathFromScreen, getScreenFromPath } from "./lib/routes";
 import { clearSession, loadSession, saveSession } from "./lib/session";
 import { applyTheme, loadTheme as loadStoredTheme, toggleTheme } from "./lib/theme";
 import AuthScreen from "./screens/AuthScreen";
@@ -46,7 +48,6 @@ function toUiPost(post) {
 
 export default function App() {
   const [theme, setTheme] = useState(loadStoredTheme);
-  const [screen, setScreen] = useState("landing");
   const [editPost, setEditPost] = useState(null);
   const [session, setSession] = useState(loadSession());
   const [posts, setPosts] = useState([]);
@@ -54,11 +55,22 @@ export default function App() {
   const [loadingPosts, setLoadingPosts] = useState(false);
   const { toasts, show: showToast, remove: removeToast } = useToast();
 
-  const isProtected = ["dashboard", "editor", "templates", "settings", "analytics", "apidocs"].includes(screen);
-  const isFullScreen = ["landing", "login", "signup", "blog", "post"].includes(screen);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const currentScreen = useMemo(() => getScreenFromPath(location.pathname), [location.pathname]);
+  const isProtected = PROTECTED_SCREENS.has(currentScreen);
+  const isFullScreen = FULLSCREEN_SCREENS.has(currentScreen);
 
   const token = session?.token || null;
   const currentUser = session?.user || null;
+
+  const setScreen = useCallback(
+    (screen) => {
+      navigate(getPathFromScreen(screen));
+    },
+    [navigate]
+  );
 
   const toast = useCallback((message, type = "success") => showToast(message, type), [showToast]);
 
@@ -120,16 +132,16 @@ export default function App() {
   }, [token, refreshPosts]);
 
   useEffect(() => {
-    if (isProtected && !token && !booting) {
-      setScreen("login");
+    if (!booting && isProtected && !token) {
+      navigate("/login", { replace: true });
     }
-  }, [isProtected, token, booting]);
+  }, [booting, isProtected, token, navigate]);
 
   useEffect(() => {
-    if (token && screen === "landing") {
-      setScreen("dashboard");
+    if (token && currentScreen === "landing") {
+      navigate("/dashboard", { replace: true });
     }
-  }, [token, screen]);
+  }, [token, currentScreen, navigate]);
 
   useEffect(() => {
     applyTheme(theme);
@@ -143,20 +155,20 @@ export default function App() {
       };
       setSession(next);
       saveSession(next);
-      setScreen("dashboard");
+      navigate("/dashboard", { replace: true });
       toast("Signed in successfully", "success");
     },
-    [toast]
+    [navigate, toast]
   );
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     clearSession();
     setSession(null);
     setPosts([]);
     setEditPost(null);
-    setScreen("login");
+    navigate("/login", { replace: true });
     toast("Signed out", "info");
-  };
+  }, [navigate, toast]);
 
   const apiContext = useMemo(
     () => ({
@@ -197,7 +209,7 @@ export default function App() {
       <GlobalStyle />
       <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg)" }}>
         {isProtected && token && (
-          <Sidebar screen={screen} setScreen={setScreen} user={currentUser} onLogout={handleLogout} />
+          <Sidebar screen={currentScreen} setScreen={setScreen} user={currentUser} onLogout={handleLogout} />
         )}
 
         <div
@@ -209,82 +221,132 @@ export default function App() {
             overflow: isFullScreen ? "visible" : "hidden",
           }}
         >
-          {screen === "landing" && <LandingScreen setScreen={setScreen} />}
-          {screen === "login" && (
-            <AuthScreen
-              mode="login"
-              setScreen={setScreen}
-              toast={(msg, type) => toast(msg, type || "success")}
-              onAuthSuccess={handleAuthSuccess}
+          <Routes>
+            <Route path="/" element={<LandingScreen setScreen={setScreen} />} />
+            <Route
+              path="/login"
+              element={
+                <AuthScreen
+                  mode="login"
+                  setScreen={setScreen}
+                  toast={(msg, type) => toast(msg, type || "success")}
+                  onAuthSuccess={handleAuthSuccess}
+                />
+              }
             />
-          )}
-          {screen === "signup" && (
-            <AuthScreen
-              mode="signup"
-              setScreen={setScreen}
-              toast={(msg, type) => toast(msg, type || "success")}
-              onAuthSuccess={handleAuthSuccess}
+            <Route
+              path="/signup"
+              element={
+                <AuthScreen
+                  mode="signup"
+                  setScreen={setScreen}
+                  toast={(msg, type) => toast(msg, type || "success")}
+                  onAuthSuccess={handleAuthSuccess}
+                />
+              }
             />
-          )}
-          {screen === "dashboard" && (
-            <DashboardScreen
-              setScreen={setScreen}
-              setEditPost={setEditPost}
-              toast={(msg, type) => toast(msg, type || "success")}
-              posts={apiContext.posts}
-              user={apiContext.user}
-              loading={apiContext.loadingPosts}
-              refreshPosts={apiContext.refreshPosts}
+            <Route
+              path="/dashboard"
+              element={
+                token ? (
+                  <DashboardScreen
+                    setScreen={setScreen}
+                    setEditPost={setEditPost}
+                    toast={(msg, type) => toast(msg, type || "success")}
+                    posts={apiContext.posts}
+                    user={apiContext.user}
+                    loading={apiContext.loadingPosts}
+                    refreshPosts={apiContext.refreshPosts}
+                  />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
             />
-          )}
-          {screen === "editor" && (
-            <EditorScreen
-              post={editPost}
-              setScreen={setScreen}
-              toast={(msg, type) => toast(msg, type || "success")}
-              token={apiContext.token}
-              onPostSaved={(saved) => {
-                setEditPost(toUiPost(saved));
-                refreshPosts();
-              }}
-              onPostDeleted={() => {
-                setEditPost(null);
-                refreshPosts();
-                setScreen("dashboard");
-              }}
+            <Route
+              path="/editor"
+              element={
+                token ? (
+                  <EditorScreen
+                    post={editPost}
+                    setScreen={setScreen}
+                    toast={(msg, type) => toast(msg, type || "success")}
+                    token={apiContext.token}
+                    onPostSaved={(saved) => {
+                      setEditPost(toUiPost(saved));
+                      refreshPosts();
+                    }}
+                    onPostDeleted={() => {
+                      setEditPost(null);
+                      refreshPosts();
+                      setScreen("dashboard");
+                    }}
+                  />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
             />
-          )}
-          {screen === "templates" && <TemplatesScreen setScreen={setScreen} toast={(msg) => toast(msg, "success")} />}
-          {screen === "settings" && (
-            <SettingsScreen
-              token={apiContext.token}
-              user={apiContext.user}
-              toast={(msg, type) => toast(msg, type || "success")}
-              onProfileUpdate={(user) => {
-                const next = { token: apiContext.token, user };
-                setSession(next);
-                saveSession(next);
-              }}
+            <Route
+              path="/templates"
+              element={
+                token ? (
+                  <TemplatesScreen setScreen={setScreen} toast={(msg) => toast(msg, "success")} />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
             />
-          )}
-          {screen === "analytics" && (
-            <AnalyticsScreen
-              token={apiContext.token}
-              toast={(msg, type) => toast(msg, type || "info")}
+            <Route
+              path="/settings"
+              element={
+                token ? (
+                  <SettingsScreen
+                    token={apiContext.token}
+                    user={apiContext.user}
+                    toast={(msg, type) => toast(msg, type || "success")}
+                    onProfileUpdate={(user) => {
+                      const next = { token: apiContext.token, user };
+                      setSession(next);
+                      saveSession(next);
+                    }}
+                  />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
             />
-          )}
-          {screen === "blog" && (
-            <BlogScreen
-              setScreen={setScreen}
-              posts={apiContext.posts}
-              user={apiContext.user}
-              setEditPost={setEditPost}
+            <Route
+              path="/analytics"
+              element={
+                token ? (
+                  <AnalyticsScreen
+                    token={apiContext.token}
+                    toast={(msg, type) => toast(msg, type || "info")}
+                  />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
             />
-          )}
-          {screen === "post" && (
-            <PostScreen post={editPost} setScreen={setScreen} user={apiContext.user} />
-          )}
-          {screen === "apidocs" && <ApiDocsScreen />}
+            <Route
+              path="/blog"
+              element={
+                <BlogScreen
+                  setScreen={setScreen}
+                  posts={apiContext.posts}
+                  user={apiContext.user}
+                  setEditPost={setEditPost}
+                />
+              }
+            />
+            <Route
+              path="/post"
+              element={editPost ? <PostScreen post={editPost} setScreen={setScreen} user={apiContext.user} /> : <Navigate to="/blog" replace />}
+            />
+            <Route path="/apidocs" element={token ? <ApiDocsScreen /> : <Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </div>
       </div>
 

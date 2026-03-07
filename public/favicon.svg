@@ -1,0 +1,27 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Scribe logo icon">
+  <defs>
+    <linearGradient id="bg" x1="64" y1="64" x2="448" y2="448" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00CCF8"/>
+      <stop offset="1" stop-color="#5AABFF"/>
+    </linearGradient>
+    <linearGradient id="nib" x1="152" y1="132" x2="360" y2="392" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#08101E"/>
+      <stop offset="1" stop-color="#142A45"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="64" y="64" width="384" height="384" rx="108" fill="url(#bg)"/>
+  <rect x="86" y="86" width="340" height="340" rx="86" stroke="rgba(255,255,255,0.28)" stroke-width="2"/>
+
+  <path d="M256 126L356 228L256 386L156 228L256 126Z" fill="url(#nib)"/>
+  <path d="M256 174L315 232L256 325L197 232L256 174Z" fill="#DFF6FF" fill-opacity="0.93"/>
+  <circle cx="256" cy="245" r="23" fill="url(#nib)"/>
+  <path d="M233 206L256 226L279 206" stroke="url(#nib)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M299 299L352 336" stroke="#0C2038" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="369" cy="349" r="15" fill="#0C2038"/>
+  <circle cx="330" cy="320" r="9" fill="#0C2038" opacity="0.7"/>
+
+  <circle cx="168" cy="160" r="8" fill="#DFF6FF" opacity="0.8"/>
+  <circle cx="188" cy="144" r="4" fill="#DFF6FF" opacity="0.7"/>
+</svg>

@@ -4,6 +4,7 @@ import AuthTabs from "../components/auth/AuthTabs";
 import SocialAuthButtons from "../components/auth/SocialAuthButtons";
 import { Btn } from "../components/ui";
 import { authApi } from "../lib/apiClient";
+import logoIcon from "../assets/scribe-logo-icon.svg";
 
 export default function AuthScreen({ mode, setScreen, toast, onAuthSuccess }) {
   const [tab, setTab] = useState(mode === "signup" ? "signup" : "login");
@@ -129,24 +130,7 @@ export default function AuthScreen({ mode, setScreen, toast, onAuthSuccess }) {
         }}
       >
         <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: "linear-gradient(135deg,var(--accent),var(--blue))",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 20,
-              fontWeight: 800,
-              color: "#000",
-              fontFamily: "var(--font-display)",
-              marginBottom: 10,
-            }}
-          >
-            S
-          </div>
+          <img src={logoIcon} alt="Scribe" style={{ width: 44, height: 44, borderRadius: 12, display: "inline-block", marginBottom: 10 }} />
           <div
             style={{
               fontFamily: "var(--font-display)",
