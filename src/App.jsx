@@ -66,7 +66,11 @@ export default function App() {
   const currentUser = session?.user || null;
 
   const setScreen = useCallback(
-    (screen) => {
+    (screen, options = {}) => {
+      if (screen === "post" && options.slug) {
+        navigate(`/post/${encodeURIComponent(options.slug)}`);
+        return;
+      }
       navigate(getPathFromScreen(screen));
     },
     [navigate]
@@ -340,9 +344,18 @@ export default function App() {
                 />
               }
             />
+            <Route path="/post" element={<Navigate to="/blog" replace />} />
             <Route
-              path="/post"
-              element={editPost ? <PostScreen post={editPost} setScreen={setScreen} user={apiContext.user} /> : <Navigate to="/blog" replace />}
+              path="/post/:slug"
+              element={
+                <PostScreen
+                  post={editPost}
+                  posts={apiContext.posts}
+                  token={apiContext.token}
+                  setScreen={setScreen}
+                  user={apiContext.user}
+                />
+              }
             />
             <Route path="/apidocs" element={token ? <ApiDocsScreen /> : <Navigate to="/login" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />

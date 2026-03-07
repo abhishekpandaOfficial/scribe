@@ -2,11 +2,11 @@ import { Avatar, Badge, Btn } from "../components/ui";
 
 export default function BlogScreen({ setScreen, posts = [], user, setEditPost }) {
   const profile = user || {
-    name: "Abhishek Panda",
+    name: "Creator",
     bio: "Technical blogger",
-    github: "@abhishek-panda",
-    twitter: "@AbhishekPanda",
-    website: "https://example.com",
+    github: "",
+    twitter: "",
+    website: "",
   };
 
   const seriesList = [
@@ -73,7 +73,7 @@ export default function BlogScreen({ setScreen, posts = [], user, setEditPost })
         {published[0] && (
           <div onClick={() => {
             setEditPost?.(published[0]);
-            setScreen("post");
+            setScreen("post", { slug: published[0].slug });
           }} style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 16, padding: 28, marginBottom: 18, cursor: "pointer", transition: "all .13s" }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--border3)"; e.currentTarget.style.transform = "translateY(-2px)"; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.transform = "translateY(0)"; }}>
             <div style={{ display: "flex", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
               <Badge variant="published">✨ Featured</Badge>
@@ -91,7 +91,7 @@ export default function BlogScreen({ setScreen, posts = [], user, setEditPost })
           {published.slice(1).map((p) => (
             <div key={p.id} onClick={() => {
               setEditPost?.(p);
-              setScreen("post");
+              setScreen("post", { slug: p.slug });
             }} style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 14, padding: 20, cursor: "pointer", transition: "all .13s" }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--border3)"; e.currentTarget.style.transform = "translateY(-1px)"; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.transform = "translateY(0)"; }}>
               <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                 <span style={{ fontSize: 11, color: "var(--text3)", fontFamily: "var(--font-mono)" }}>📚 {p.series}</span>

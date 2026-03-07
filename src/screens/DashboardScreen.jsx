@@ -315,7 +315,7 @@ export default function DashboardScreen({
                       <button
                         onClick={() => {
                           setEditPost(post);
-                          setScreen("post");
+                          setScreen("post", { slug: post.slug });
                         }}
                         style={{ background: "none", color: "var(--text3)", fontSize: 11, fontFamily: "var(--font-mono)", border: "none" }}
                       >

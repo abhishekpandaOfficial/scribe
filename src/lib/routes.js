@@ -38,9 +38,12 @@ export function getPathFromScreen(screen) {
 }
 
 export function getScreenFromPath(pathname) {
+  if (pathname.startsWith("/post/")) {
+    return "post";
+  }
+
   if (PATH_TO_SCREEN[pathname]) {
     return PATH_TO_SCREEN[pathname];
   }
   return "landing";
 }
-
