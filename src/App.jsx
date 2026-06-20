@@ -390,7 +390,9 @@ export default function App() {
           <Toast key={item.id} message={item.message} type={item.type} onClose={() => removeToast(item.id)} />
         ))}
       </div>
-      <ThemeToggleButton theme={theme} onToggle={() => setTheme((current) => toggleTheme(current))} />
+      {currentScreen !== "landing" && (
+        <ThemeToggleButton theme={theme} onToggle={() => setTheme((current) => toggleTheme(current))} />
+      )}
     </>
   );
 }

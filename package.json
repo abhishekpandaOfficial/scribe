@@ -3,6 +3,10 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20.19.0 <27",
+    "npm": ">=9"
+  },
   "scripts": {
     "dev": "concurrently -n api,web -c cyan,magenta \"npm:dev:api\" \"npm:dev:web\"",
     "dev:web": "vite --host 127.0.0.1 --port 4173 --force",
@@ -20,7 +24,7 @@
     "@supabase/supabase-js": "^2.98.0",
     "@upstash/redis": "^1.36.3",
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^12.6.2",
+    "better-sqlite3": "^12.11.1",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",

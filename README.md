@@ -124,7 +124,7 @@ scribe/
 
 ### Prerequisites
 
-- Node.js 18+ (Node.js 20 LTS recommended)
+- Node.js 20.19+ or 22/24/26
 - npm 9+
 
 ### 1) Clone and install
