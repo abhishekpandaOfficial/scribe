@@ -272,6 +272,30 @@ export default function LandingScreen({ setScreen }) {
           background: #0b0b0c;
           color: #f2eee5;
         }
+        .reference-landing .hero {
+          padding-top: 136px;
+          padding-bottom: 64px;
+        }
+        .reference-landing .hero-meta {
+          margin-bottom: 44px;
+        }
+        .reference-landing .hero-headline {
+          max-width: 1180px;
+        }
+        .reference-landing .hero-headline h1 {
+          font-size: 96px;
+          line-height: .91;
+          letter-spacing: 0;
+        }
+        .reference-landing .rotator {
+          min-width: 5.25em;
+        }
+        .reference-landing .hero-formats {
+          margin-top: 44px;
+        }
+        .reference-landing .hero-sub {
+          margin-top: 26px;
+        }
         .reference-landing .footer-col ul {
           margin: 0;
           padding: 0;
@@ -285,6 +309,9 @@ export default function LandingScreen({ setScreen }) {
           -webkit-tap-highlight-color: transparent;
         }
         @media (max-width: 1100px) {
+          .reference-landing .hero-headline h1 {
+            font-size: 74px;
+          }
           .reference-landing .workspace {
             transform: scale(.9);
             transform-origin: top center;
@@ -309,7 +336,8 @@ export default function LandingScreen({ setScreen }) {
             display: none;
           }
           .reference-landing .hero {
-            padding-top: 124px;
+            padding-top: 112px;
+            padding-bottom: 48px;
           }
           .reference-landing .hero-meta,
           .reference-landing .hero-sub,
@@ -318,18 +346,25 @@ export default function LandingScreen({ setScreen }) {
           }
           .reference-landing .hero-meta {
             align-items: flex-start;
+            margin-bottom: 34px;
           }
           .reference-landing .hero-meta .right {
             text-align: left;
           }
           .reference-landing .hero-headline h1 {
-            font-size: clamp(50px, 15vw, 78px);
-            line-height: .92;
+            font-size: 58px;
+            line-height: .93;
           }
           .reference-landing .rotator {
             display: block;
             margin-top: .08em;
             min-height: 1.08em;
+            min-width: 0;
+            width: max-content;
+            max-width: 100%;
+          }
+          .reference-landing .hero-formats {
+            margin-top: 30px;
           }
           .reference-landing .hero-sub {
             display: grid;
@@ -385,6 +420,29 @@ export default function LandingScreen({ setScreen }) {
           .reference-landing .hero-badge {
             max-width: 100%;
           }
+          .reference-landing .hero-meta {
+            margin-bottom: 28px;
+          }
+          .reference-landing .hero-meta .right {
+            display: none;
+          }
+          .reference-landing .hero-headline h1 {
+            font-size: 48px;
+            line-height: .94;
+          }
+          .reference-landing .hero-formats {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding-block: 10px;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+          }
+          .reference-landing .hero-formats::-webkit-scrollbar {
+            display: none;
+          }
+          .reference-landing .hero-formats .f-chip {
+            flex: 0 0 auto;
+          }
           .reference-landing .hero-actions,
           .reference-landing .cta-row {
             align-items: stretch;
@@ -417,6 +475,11 @@ export default function LandingScreen({ setScreen }) {
           }
           .reference-landing .footer-massive {
             font-size: 28vw;
+          }
+        }
+        @media (max-width: 350px) {
+          .reference-landing .hero-headline h1 {
+            font-size: 43px;
           }
         }
       `}</style>
