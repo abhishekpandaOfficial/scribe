@@ -53,6 +53,13 @@ export default function LandingScreen({ setScreen }) {
     const cleanups = [];
     document.body.classList.add("reference-landing-active");
     cleanups.push(() => document.body.classList.remove("reference-landing-active"));
+    if (window.location.hash) {
+      window.history.replaceState(
+        window.history.state,
+        "",
+        `${window.location.pathname}${window.location.search}`
+      );
+    }
     const savedTheme = localStorage.getItem("scribe-theme") || "light";
     document.documentElement.setAttribute("data-theme", savedTheme);
 
@@ -186,25 +193,42 @@ export default function LandingScreen({ setScreen }) {
       const href = anchor.getAttribute("href");
       const label = anchor.textContent.trim().toLowerCase();
 
-      if (href?.startsWith("#") && href.length > 1) {
-        const target = root.querySelector(href);
-        if (target) {
-          event.preventDefault();
-          target.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-        return;
-      }
-
       if (label.includes("sign in")) {
         event.preventDefault();
         setScreen("login");
-      } else if (
+        return;
+      }
+
+      if (
         label.includes("get started") ||
         label.includes("start free") ||
         label.includes("start trial")
       ) {
         event.preventDefault();
         setScreen("signup");
+        return;
+      }
+
+      if (label === "blog") {
+        event.preventDefault();
+        setScreen("blog");
+        return;
+      }
+
+      const sectionAliases = {
+        "#solutions": "#workflows",
+        "#resources": "#templates",
+      };
+
+      if (href?.startsWith("#")) {
+        event.preventDefault();
+        const sectionHref = sectionAliases[href] || href;
+        const target = sectionHref.length > 1 ? root.querySelector(sectionHref) : null;
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else if (anchor.classList.contains("brand")) {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
       }
     };
     root.addEventListener("click", clickHandler);
