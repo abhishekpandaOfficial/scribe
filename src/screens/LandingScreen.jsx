@@ -273,11 +273,14 @@ export default function LandingScreen({ setScreen }) {
           color: #f2eee5;
         }
         .reference-landing .hero {
-          padding-top: 136px;
+          padding-top: 132px;
           padding-bottom: 64px;
         }
         .reference-landing .hero-meta {
-          margin-bottom: 44px;
+          display: none;
+        }
+        .reference-landing .hero-headline .h-meta {
+          display: none;
         }
         .reference-landing .hero-headline {
           max-width: 1180px;
@@ -345,8 +348,7 @@ export default function LandingScreen({ setScreen }) {
             grid-template-columns: 1fr;
           }
           .reference-landing .hero-meta {
-            align-items: flex-start;
-            margin-bottom: 34px;
+            display: none;
           }
           .reference-landing .hero-meta .right {
             text-align: left;
@@ -421,7 +423,7 @@ export default function LandingScreen({ setScreen }) {
             max-width: 100%;
           }
           .reference-landing .hero-meta {
-            margin-bottom: 28px;
+            display: none;
           }
           .reference-landing .hero-meta .right {
             display: none;
